@@ -26,7 +26,7 @@ void socketTCPServer::run()
 
 	//http://www.cnblogs.com/qq78292959/archive/2012/03/22/2411390.html
 	// reuse local address and port
-	int on = 1;
+	I4 on = 1;
 	if(-1 == setsockopt(sockSrv,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on)))
 	{
 		perror("bind");
@@ -71,24 +71,24 @@ void socketTCPServer::run()
 		{
 			std::cout << "receive\n";
 
-			int i4_recv = recv(sockConn,recv_buf,8,0);
-			if(i4_recv > 0)
+			U2 u2_recv = recv(sockConn,recv_buf,8,0);
+			if(u2_recv > 0)
 			{
 				if(0 == strncmp(recv_buf,"verify",6))
 				{
-					unsigned int dataSize = 0;
-					memcpy(&dataSize,recv_buf + 6, 2);
-					if(dataSize > BUFFER_SIZE)
+					U2 u2_dataSize = 0;
+					memcpy(&u2_dataSize,recv_buf + 6, 2);
+					if(u2_dataSize > BUFFER_SIZE)
 					{
 						std::cout << "data size is too large!\n";
 						quit();
 						return;
 					}
 					std::cout << "data size = "
-										<< dataSize
+										<< u2_dataSize
 										<< std::endl;
 
-					char buffer[] = { "OK" };
+					U1 buffer[] = { "OK" };
 					if(-1 == send(sockConn,buffer,sizeof(buffer),0))
 					{
 						perror("send OK");
@@ -96,13 +96,13 @@ void socketTCPServer::run()
 						return;
 					}
 
-					int offset = 0;
-					unsigned int dataSizeTmp = dataSize;
+					U2 offset = 0;
+					U2 u2_dataSizeTmp = u2_dataSize;
 					memset(recv_buf,0,sizeof(recv_buf));
-					i4_recv = recv(sockConn,recv_buf,dataSize,0);
-					while(dataSize > i4_recv)
+					u2_recv = recv(sockConn,recv_buf,u2_dataSize,0);
+					while(u2_dataSize > u2_recv)
 					{
-						if(-1 == i4_recv)
+						if(-1 == u2_recv)
 						{
 							perror("recv");
 							quit();
@@ -110,9 +110,9 @@ void socketTCPServer::run()
 						}
 						else
 						{
-							offset += i4_recv;
-							dataSize -= i4_recv;
-							i4_recv = recv(sockConn,recv_buf + offset,dataSize,0);
+							offset += u2_recv;
+							u2_dataSize -= u2_recv;
+							u2_recv = recv(sockConn,recv_buf + offset,u2_dataSize,0);
 							std::cout << "whole message = "
 												<< recv_buf
 												<< std::endl;
@@ -121,11 +121,11 @@ void socketTCPServer::run()
 
 					//save data
 					isConnected = false;
-					saveData(recv_buf,dataSizeTmp);
+					saveData(recv_buf,u2_dataSizeTmp);
 				}
 				else
 				{
-					std::cout << "receive wrong data!\n";
+					std::cout << "received wrong data!\n";
 					quit();
 					return;
 				}
@@ -145,25 +145,26 @@ void socketTCPServer::run()
 	}
 }
 
-void socketTCPServer::saveData(char *data, unsigned int dataSize)
+void socketTCPServer::saveData(I1 *data, U2 u2_dataSize)
 {
 	std::cout << "saveData() called!\n";
 
-	FILE *fp = fopen(FILE_PATH,"rb");
-	if(NULL == fp)
+	using namespace std;
+	ofstream fout(FILE_PATH,ios_base::out | ios_base::binary);
+	if(!fout.is_open())
 	{
-		perror("fopen");
+		perror("ofstream open");
 		return;
 	}
 
-	fwrite(data,sizeof(char),dataSize,fp);
-	fclose(fp);
+	fout.write(data,u2_dataSize);
+	fout.close();
 }
 
 void socketTCPServer::quit()
 {
 	isRun = false;
+	isConnected = false;
 	close(sockConn);
 	close(sockSrv);
-	isConnected = false;
 }
