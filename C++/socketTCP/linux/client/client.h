@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string>
 #include <string.h>
 #include <netinet/in.h>
@@ -18,14 +17,12 @@
 #include "types.h"
 
 #define SOCKET_TCP_PORT 1205		 		// TCPServer Port
-#define BUFFER_SIZE USHRT_MAX      	// send buffer size
 #define SERVER_ADDR "127.0.0.1"		  // server address
 
 class socketTCPClient
 {
   // property
   I4 sockClient;
-  I1 send_buf[BUFFER_SIZE];
 
   bool isConnected; // connect flag
   bool isRun;       // run flag
@@ -33,12 +30,16 @@ class socketTCPClient
   bool connectToServer(); // build socket to server
 
 public:
-  socketTCPClient();
+  socketTCPClient():
+    isConnected(false),
+    isRun(true)
+  {}
+    
   ~socketTCPClient() = default;
 
   void quit();
   void sendFile(const I1 *path);
-  void sendData(const I1* data,U2 u2_dataSize);
+  void sendData(const I1* data,U4 u4_dataSize);
 
 };
 

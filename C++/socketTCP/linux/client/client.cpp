@@ -1,12 +1,5 @@
 #include "client.h"
 
-socketTCPClient::socketTCPClient():
-  isConnected(false),
-  isRun(true)
-{
-  memset(send_buf,0,sizeof(send_buf));
-}
-
 bool socketTCPClient::connectToServer()
 {
   sockClient = socket(AF_INET,SOCK_STREAM,0);
@@ -54,7 +47,7 @@ void socketTCPClient::sendFile(const I1 *path)
 {
   std::cout << "sendFile() called!\n";
 
-  U2 u2_fileLen = 0;
+  U4 u4_fileLen = 0;
   I1 *file_buf;
   {
     using namespace std;
@@ -67,27 +60,27 @@ void socketTCPClient::sendFile(const I1 *path)
     }
 
     fin.seekg(0,ios_base::end); // set fin to the end of the file
-    if(USHRT_MAX < fin.tellg())
+    if(UINT_MAX < fin.tellg())
     {
       std::cout << "the file is too large!\n";
     }
 
-    u2_fileLen = fin.tellg();      // set fileLen
+    u4_fileLen = fin.tellg();      // set fileLen
     cout << "file length = "
-         << u2_fileLen << endl;
+         << u4_fileLen << endl;
 
     fin.seekg(0,ios_base::beg); // return to the beginning of the file
-    file_buf = new char[u2_fileLen];
-    fin.read(file_buf,u2_fileLen);
+    file_buf = new char[u4_fileLen];
+    fin.read(file_buf,u4_fileLen);
     fin.close();
   }
 
-  sendData(file_buf,u2_fileLen);
+  sendData(file_buf,u4_fileLen);
 
   delete file_buf;
 }
 
-void socketTCPClient::sendData(const I1* data,U2 u2_dataSize)
+void socketTCPClient::sendData(const I1* data,U4 u4_dataSize)
 {
   std::cout << "sendData() called!\n";
 
@@ -98,8 +91,8 @@ void socketTCPClient::sendData(const I1* data,U2 u2_dataSize)
     return;
   }
 
-  char buffer[8] = { "verify" };
-  memcpy(buffer + 6, &u2_dataSize, sizeof(u2_dataSize));
+  char buffer[10] = { "verify" };
+  memcpy(buffer + 6, &u4_dataSize, sizeof(u4_dataSize));
 
   try
   {
@@ -119,7 +112,7 @@ void socketTCPClient::sendData(const I1* data,U2 u2_dataSize)
     }
     else if(0 == strncmp(buffer,"OK",2))
     {
-      if(-1 == send(sockClient,data,u2_dataSize,0))
+      if(-1 == send(sockClient,data,u4_dataSize,0))
       {
         perror("send");
         close(sockClient);
