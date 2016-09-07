@@ -86,7 +86,14 @@ void socketTCPServer::run()
 
 					U4 offset = 0;
 					U4 u4_dataSizeTmp = u4_dataSize;
-					I1 *recv_buf = new I1[u4_dataSize];
+
+					I1 *recv_buf = new (std::nothrow)I1[u4_dataSize];
+					if(nullptr == recv_buf)
+					{
+						std::cout << "the size of data is too large!\n";
+						quit();
+						return;
+					}
 
 					u4_recv = recv(sockConn,recv_buf,u4_dataSize,0);
 					while(u4_dataSize > u4_recv)
@@ -102,7 +109,7 @@ void socketTCPServer::run()
 							offset += u4_recv;
 							u4_dataSize -= u4_recv;
 							u4_recv = recv(sockConn,recv_buf + offset,u4_dataSize,0);
-							std::cout << "whole message = "
+							std::cout << "whole message = \n"
 												<< recv_buf
 												<< std::endl;
 						}
