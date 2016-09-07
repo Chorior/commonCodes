@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include "types.h"
 
 #define SOCKET_TCP_PORT 1205		 		// TCPServer Port
