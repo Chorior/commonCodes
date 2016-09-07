@@ -87,7 +87,7 @@ void socketTCPClient::sendFile(const I1 *path)
   delete file_buf;
 }
 
-void socketTCPClient::sendData(const I1* data,U4 u4_dataSize)
+void socketTCPClient::sendData(const I1* data,const U4 &u4_dataSize)
 {
   std::cout << "sendData() called!\n";
 
@@ -132,6 +132,27 @@ void socketTCPClient::sendData(const I1* data,U4 u4_dataSize)
     perror("error");
     return;
   }
+}
+
+void socketTCPClient::sendFixedStruct(const FIXED_LENGTH_STRUCT &fixedStruct)
+{
+  char *buffer = new (std::nothrow)char[sizeof(FIXED_LENGTH_STRUCT)];
+  if(nullptr == buffer)
+  {
+    std::cout << "new buffer error!\n";
+    return;
+  }
+
+  memcpy(buffer,&fixedStruct,sizeof(fixedStruct));
+
+  sendData(buffer,sizeof(FIXED_LENGTH_STRUCT));
+
+  delete buffer;
+}
+
+void socketTCPClient::sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStruct)
+{
+
 }
 
 void socketTCPClient::quit()

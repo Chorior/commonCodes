@@ -34,12 +34,14 @@ public:
     isConnected(false),
     isRun(true)
   {}
-    
+
   ~socketTCPClient() = default;
 
   void quit();
   void sendFile(const I1 *path);
-  void sendData(const I1* data,U4 u4_dataSize);
+  void sendData(const I1* data,const U4 &u4_dataSize);
+  void sendFixedStruct(const FIXED_LENGTH_STRUCT &fixedStruct);
+  void sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStruct);
 
 };
 
