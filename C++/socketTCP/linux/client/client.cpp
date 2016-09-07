@@ -63,6 +63,7 @@ void socketTCPClient::sendFile(const I1 *path)
     if(UINT_MAX < fin.tellg())
     {
       std::cout << "the file is too large!\n";
+      return;
     }
 
     u4_fileLen = fin.tellg();      // set fileLen
@@ -70,9 +71,15 @@ void socketTCPClient::sendFile(const I1 *path)
          << u4_fileLen << endl;
 
     fin.seekg(0,ios_base::beg); // return to the beginning of the file
-    file_buf = new char[u4_fileLen];
+    file_buf = new (std::nothrow)char[u4_fileLen];
     fin.read(file_buf,u4_fileLen);
     fin.close();
+  }
+
+  if(nullptr == file_buf)
+  {
+    std::cout << "the file is too large!\n";
+    return;
   }
 
   sendData(file_buf,u4_fileLen);
