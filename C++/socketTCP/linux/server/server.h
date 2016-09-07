@@ -27,7 +27,9 @@ class socketTCPServer
 	bool isConnected; 	// client connect flag
 	bool isRun;		// thread run flag
 
-	void saveData(I1 *data, U4 dataSize);
+	void saveData(const I1 *data, const U4 &u4_dataSize);
+	void saveFixedStruct(const I1 *data,const U4 &u4_dataSize);
+	void saveMutableStruct(const I1 *data,const U4 &u4_dataSize);
 
 public:
 

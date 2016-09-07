@@ -117,7 +117,8 @@ void socketTCPServer::run()
 
 					//save data
 					isConnected = false;
-					saveData(recv_buf,u4_dataSizeTmp);
+					//saveData(recv_buf,u4_dataSizeTmp);
+					saveFixedStruct(recv_buf,u4_dataSizeTmp);
 
 					delete recv_buf;
 				}
@@ -143,7 +144,7 @@ void socketTCPServer::run()
 	}
 }
 
-void socketTCPServer::saveData(I1 *data, U4 u4_dataSize)
+void socketTCPServer::saveData(const I1 *data, const U4 &u4_dataSize)
 {
 	std::cout << "saveData() called!\n";
 
@@ -157,6 +158,27 @@ void socketTCPServer::saveData(I1 *data, U4 u4_dataSize)
 
 	fout.write(data,u4_dataSize);
 	fout.close();
+}
+
+void socketTCPServer::saveFixedStruct(const I1 *data,const U4 &u4_dataSize)
+{
+	FIXED_LENGTH_STRUCT structFixed;
+	memcpy(&structFixed,data,u4_dataSize);
+
+	std::cout << "structFixed.f8 = " << structFixed.f8 << std::endl;
+	std::cout << "structFixed.f4 = " << structFixed.f4 << std::endl;
+	std::cout << "structFixed.i4 = " << structFixed.i4 << std::endl;
+	std::cout << "structFixed.u4 = " << structFixed.u4 << std::endl;
+	std::cout << "structFixed.i2 = " << structFixed.i2 << std::endl;
+	std::cout << "structFixed.u2 = " << structFixed.u2 << std::endl;
+	std::cout << "structFixed.i1 = " << structFixed.i1 << std::endl;
+	std::cout << "structFixed.u1 = " << structFixed.u1 << std::endl;
+
+}
+
+void socketTCPServer::saveMutableStruct(const I1 *data,const U4 &u4_dataSize)
+{
+
 }
 
 void socketTCPServer::quit()
