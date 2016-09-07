@@ -1,12 +1,5 @@
 #include "server.h"
 
-socketTCPServer::socketTCPServer():
-	isConnected(false),
-	isRun(true)
-{
-	memset(recv_buf,0,sizeof(recv_buf));
-}
-
 void socketTCPServer::run()
 {
 	std::cout << "server start\n\n";
@@ -71,24 +64,19 @@ void socketTCPServer::run()
 		{
 			std::cout << "receive\n";
 
-			U2 u2_recv = recv(sockConn,recv_buf,8,0);
-			if(u2_recv > 0)
+			char recv_sizeBuf[10] = { 0 };
+			U4 u4_recv = recv(sockConn,recv_sizeBuf,10,0);
+			if(u4_recv > 0)
 			{
-				if(0 == strncmp(recv_buf,"verify",6))
+				if(0 == strncmp(recv_sizeBuf,"verify",6))
 				{
-					U2 u2_dataSize = 0;
-					memcpy(&u2_dataSize,recv_buf + 6, 2);
-					if(u2_dataSize > BUFFER_SIZE)
-					{
-						std::cout << "data size is too large!\n";
-						quit();
-						return;
-					}
+					U4 u4_dataSize = 0;
+					memcpy(&u4_dataSize,recv_sizeBuf + 6, 4);
 					std::cout << "data size = "
-										<< u2_dataSize
+										<< u4_dataSize
 										<< std::endl;
 
-					U1 buffer[] = { "OK" };
+					I1 buffer[] = { "OK" };
 					if(-1 == send(sockConn,buffer,sizeof(buffer),0))
 					{
 						perror("send OK");
@@ -96,13 +84,14 @@ void socketTCPServer::run()
 						return;
 					}
 
-					U2 offset = 0;
-					U2 u2_dataSizeTmp = u2_dataSize;
-					memset(recv_buf,0,sizeof(recv_buf));
-					u2_recv = recv(sockConn,recv_buf,u2_dataSize,0);
-					while(u2_dataSize > u2_recv)
+					U4 offset = 0;
+					U4 u4_dataSizeTmp = u4_dataSize;
+					I1 *recv_buf = new I1[u4_dataSize];
+
+					u4_recv = recv(sockConn,recv_buf,u4_dataSize,0);
+					while(u4_dataSize > u4_recv)
 					{
-						if(-1 == u2_recv)
+						if(-1 == u4_recv)
 						{
 							perror("recv");
 							quit();
@@ -110,9 +99,9 @@ void socketTCPServer::run()
 						}
 						else
 						{
-							offset += u2_recv;
-							u2_dataSize -= u2_recv;
-							u2_recv = recv(sockConn,recv_buf + offset,u2_dataSize,0);
+							offset += u4_recv;
+							u4_dataSize -= u4_recv;
+							u4_recv = recv(sockConn,recv_buf + offset,u4_dataSize,0);
 							std::cout << "whole message = "
 												<< recv_buf
 												<< std::endl;
@@ -121,7 +110,9 @@ void socketTCPServer::run()
 
 					//save data
 					isConnected = false;
-					saveData(recv_buf,u2_dataSizeTmp);
+					saveData(recv_buf,u4_dataSizeTmp);
+
+					delete recv_buf;
 				}
 				else
 				{
@@ -145,7 +136,7 @@ void socketTCPServer::run()
 	}
 }
 
-void socketTCPServer::saveData(I1 *data, U2 u2_dataSize)
+void socketTCPServer::saveData(I1 *data, U4 u4_dataSize)
 {
 	std::cout << "saveData() called!\n";
 
@@ -157,7 +148,7 @@ void socketTCPServer::saveData(I1 *data, U2 u2_dataSize)
 		return;
 	}
 
-	fout.write(data,u2_dataSize);
+	fout.write(data,u4_dataSize);
 	fout.close();
 }
 
