@@ -14,6 +14,7 @@
 #include <iostream>
 #include <climits>
 #include <arpa/inet.h>
+#include <algorithm>
 #include "types.h"
 
 #define SOCKET_TCP_PORT 1205		 		// TCPServer Port
@@ -28,6 +29,8 @@ class socketTCPClient
   bool isRun;       // run flag
 
   bool connectToServer(); // build socket to server
+
+  U4 arrangeString(char *buffer,const std::string &str);
 
 public:
   socketTCPClient():
