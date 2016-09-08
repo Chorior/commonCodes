@@ -29,18 +29,25 @@ class socketTCPServer
 	bool isConnected; 	// client connect flag
 	bool isRun;		// thread run flag
 
-	void saveData(const I1 *data, const U4 &u4_dataSize);
+	void buildSocket();
+	void saveFile(const I1 *data, const U4 &u4_dataSize);
 	void saveFixedStruct(const I1 *data,const U4 &u4_dataSize);
 	void saveMutableStruct(const I1 *data,const U4 &u4_dataSize);
+	std::unique_ptr<I1 []> saveData(U4 &u4_dataSize);
 
 public:
 
 	socketTCPServer():
 		isConnected(false),
 		isRun(true)
-	{}
+	{
+			buildSocket();
+	}
 
-	~socketTCPServer() = default;
+	~socketTCPServer()
+	{
+		quit();
+	}
 
 	void run();
 	void quit();
