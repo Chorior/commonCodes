@@ -18,8 +18,8 @@
 #include <memory>
 #include "types.h"
 
-#define SOCKET_TCP_PORT 1205		 		// TCPServer Port
-#define SERVER_ADDR "127.0.0.1"		  // server address
+#define SOCKET_TCP_PORT 1205		// TCPServer Port
+#define SERVER_ADDR "127.0.0.1"		// server address
 
 class socketTCPClient
 {
@@ -35,8 +35,8 @@ class socketTCPClient
 
 public:
   socketTCPClient():
-    isConnected(false),
-    isRun(true)
+  	isConnected(false),
+  	isRun(true)
   {}
 
   ~socketTCPClient() = default;

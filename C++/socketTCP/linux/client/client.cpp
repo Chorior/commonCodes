@@ -66,7 +66,7 @@ void socketTCPClient::sendFile(const I1 *path)
       return;
     }
 
-    u4_fileLen = fin.tellg();      // set fileLen
+    u4_fileLen = fin.tellg();   // set fileLen
     cout << "file length = "
          << u4_fileLen << endl;
 
