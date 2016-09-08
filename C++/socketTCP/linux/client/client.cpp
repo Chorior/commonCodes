@@ -48,7 +48,7 @@ void socketTCPClient::sendFile(const I1 *path)
   std::cout << "sendFile() called!\n";
 
   U4 u4_fileLen = 0;
-  I1 *file_buf;
+  std::unique_ptr<I1 []> file_buf;
   {
     using namespace std;
 
@@ -71,20 +71,19 @@ void socketTCPClient::sendFile(const I1 *path)
          << u4_fileLen << endl;
 
     fin.seekg(0,ios_base::beg); // return to the beginning of the file
-    file_buf = new (std::nothrow)char[u4_fileLen];
-    fin.read(file_buf,u4_fileLen);
+
+    file_buf = std::unique_ptr<I1 []> (new (std::nothrow)I1[u4_fileLen]);
+    if(nullptr == file_buf.get())
+    {
+      std::cout << "the file is too large!\n";
+      return;
+    }
+
+    fin.read(file_buf.get(),u4_fileLen);
     fin.close();
   }
 
-  if(nullptr == file_buf)
-  {
-    std::cout << "the file is too large!\n";
-    return;
-  }
-
-  sendData(file_buf,u4_fileLen);
-
-  delete file_buf;
+  sendData(file_buf.get(),u4_fileLen);
 }
 
 void socketTCPClient::sendData(const I1* data,const U4 &u4_dataSize)
@@ -136,18 +135,16 @@ void socketTCPClient::sendData(const I1* data,const U4 &u4_dataSize)
 
 void socketTCPClient::sendFixedStruct(const FIXED_LENGTH_STRUCT &fixedStruct)
 {
-  char *buffer = new (std::nothrow)char[sizeof(FIXED_LENGTH_STRUCT)];
-  if(nullptr == buffer)
+  std::unique_ptr<I1 []> buffer(new (std::nothrow)I1[sizeof(FIXED_LENGTH_STRUCT)]);
+  if(nullptr == buffer.get())
   {
     std::cout << "new buffer error!\n";
     return;
   }
 
-  memcpy(buffer,&fixedStruct,sizeof(fixedStruct));
+  memcpy(buffer.get(),&fixedStruct,sizeof(fixedStruct));
 
-  sendData(buffer,sizeof(FIXED_LENGTH_STRUCT));
-
-  delete buffer;
+  sendData(buffer.get(),sizeof(FIXED_LENGTH_STRUCT));
 }
 
 void socketTCPClient::sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStruct)
@@ -170,8 +167,8 @@ void socketTCPClient::sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStru
             << u4_bufferSize
             << std::endl;
 
-  I1 *buffer = new (std::nothrow)I1[u4_bufferSize];
-  if(nullptr == buffer)
+  std::unique_ptr<I1 []> buffer(new (std::nothrow)I1[u4_bufferSize]);
+  if(nullptr == buffer.get())
   {
     std::cout << "new buffer error!\n";
     return;
@@ -179,20 +176,20 @@ void socketTCPClient::sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStru
 
   U4 u4_offset = 0;
 
-  memcpy(buffer + u4_offset,&(mutableStruct.i4),sizeof(I4));
+  memcpy(buffer.get() + u4_offset,&(mutableStruct.i4),sizeof(I4));
   u4_offset += sizeof(I4);
 
-  memcpy(buffer + u4_offset,&(mutableStruct.u2),sizeof(U2));
+  memcpy(buffer.get() + u4_offset,&(mutableStruct.u2),sizeof(U2));
   u4_offset += sizeof(U2);
 
-  u4_offset += arrangeString(buffer + u4_offset,mutableStruct.str);
+  u4_offset += arrangeString(buffer.get() + u4_offset,mutableStruct.str);
 
   for_each(
     mutableStruct.vector_strList.begin(),
     mutableStruct.vector_strList.end(),
     [&](std::string str)
     {
-      u4_offset += arrangeString(buffer + u4_offset,str);
+      u4_offset += arrangeString(buffer.get() + u4_offset,str);
     }
   );
 
@@ -206,12 +203,10 @@ void socketTCPClient::sendMutableStruct(const MUTABLE_LENGTH_STRUCT &mutableStru
     return;
   }
 
-  sendData(buffer,u4_bufferSize);
-
-  delete buffer;
+  sendData(buffer.get(),u4_bufferSize);
 }
 
-U4 socketTCPClient::arrangeString(char *buffer,const std::string &str)
+U4 socketTCPClient::arrangeString(I1 *buffer,const std::string &str)
 {
   U4 u4_offset = 0;
   U2 u2_strSize = str.size();

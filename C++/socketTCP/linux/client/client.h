@@ -15,6 +15,7 @@
 #include <climits>
 #include <arpa/inet.h>
 #include <algorithm>
+#include <memory>
 #include "types.h"
 
 #define SOCKET_TCP_PORT 1205		 		// TCPServer Port
@@ -30,7 +31,7 @@ class socketTCPClient
 
   bool connectToServer(); // build socket to server
 
-  U4 arrangeString(char *buffer,const std::string &str);
+  U4 arrangeString(I1 *buffer,const std::string &str);
 
 public:
   socketTCPClient():
