@@ -16,9 +16,9 @@
 #include <memory>
 #include "types.h"
 
-#define SOCKET_TCP_PORT 1205		 		// TCPServer Port
-#define BIND_ADDR INADDR_ANY		  	// bind address
-#define FILE_PATH "receive_file"  	// receive file path
+#define SOCKET_TCP_PORT 1205		// TCPServer Port
+#define BIND_ADDR INADDR_ANY		// bind address
+#define FILE_PATH "receive_file"	// receive file path
 
 class socketTCPServer
 {

@@ -73,8 +73,8 @@ void socketTCPServer::run()
 					U4 u4_dataSize = 0;
 					memcpy(&u4_dataSize,recv_sizeBuf + 6, 4);
 					std::cout << "data size = "
-										<< u4_dataSize
-										<< std::endl;
+						  << u4_dataSize
+						  << std::endl;
 
 					I1 buffer[] = { "OK" };
 					if(-1 == send(sockConn,buffer,sizeof(buffer),0))
@@ -110,8 +110,8 @@ void socketTCPServer::run()
 							u4_dataSize -= u4_recv;
 							u4_recv = recv(sockConn,recv_buf.get() + offset,u4_dataSize,0);
 							std::cout << "whole message = \n"
-												<< recv_buf.get()
-												<< std::endl;
+								  << recv_buf.get()
+								  << std::endl;
 						}
 					}
 
@@ -229,13 +229,13 @@ void socketTCPServer::saveMutableStruct(const I1 *data,const U4 &u4_dataSize)
 
 	{
 		std::cout << "structMutable.i4 = "
-							<< structMutable.i4 << std::endl;
+			  << structMutable.i4 << std::endl;
 
 		std::cout << "structMutable.u2 = "
-							<< structMutable.u2 << std::endl;
+			  << structMutable.u2 << std::endl;
 
 		std::cout << "structMutable.str = "
-							<< structMutable.str << std::endl;
+			  << structMutable.str << std::endl;
 
 		for_each(
 			structMutable.vector_strList.begin(),
@@ -243,7 +243,7 @@ void socketTCPServer::saveMutableStruct(const I1 *data,const U4 &u4_dataSize)
 			[](std::string str)
 			{
 				std::cout << "structMutable.vector_strList.str = "
-									<< str << std::endl;
+					  << str << std::endl;
 			}
 		);
 	}
