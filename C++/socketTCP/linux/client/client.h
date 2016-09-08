@@ -39,7 +39,10 @@ public:
   	isRun(true)
   {}
 
-  ~socketTCPClient() = default;
+  ~socketTCPClient()
+  {
+    quit();
+  }
 
   void quit();
   void sendFile(const I1 *path);
