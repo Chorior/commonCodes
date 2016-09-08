@@ -87,15 +87,15 @@ void socketTCPServer::run()
 					U4 offset = 0;
 					U4 u4_dataSizeTmp = u4_dataSize;
 
-					I1 *recv_buf = new (std::nothrow)I1[u4_dataSize];
-					if(nullptr == recv_buf)
+					std::unique_ptr<I1 []> recv_buf(new (std::nothrow)I1[u4_dataSize]);
+					if(nullptr == recv_buf.get())
 					{
 						std::cout << "the size of data is too large!\n";
 						quit();
 						return;
 					}
 
-					u4_recv = recv(sockConn,recv_buf,u4_dataSize,0);
+					u4_recv = recv(sockConn,recv_buf.get(),u4_dataSize,0);
 					while(u4_dataSize > u4_recv)
 					{
 						if(-1 == u4_recv)
@@ -108,9 +108,9 @@ void socketTCPServer::run()
 						{
 							offset += u4_recv;
 							u4_dataSize -= u4_recv;
-							u4_recv = recv(sockConn,recv_buf + offset,u4_dataSize,0);
+							u4_recv = recv(sockConn,recv_buf.get() + offset,u4_dataSize,0);
 							std::cout << "whole message = \n"
-												<< recv_buf
+												<< recv_buf.get()
 												<< std::endl;
 						}
 					}
@@ -119,9 +119,7 @@ void socketTCPServer::run()
 					isConnected = false;
 					//saveData(recv_buf,u4_dataSizeTmp);
 					//saveFixedStruct(recv_buf,u4_dataSizeTmp);
-					saveMutableStruct(recv_buf,u4_dataSizeTmp);
-
-					delete recv_buf;
+					saveMutableStruct(recv_buf.get(),u4_dataSizeTmp);
 				}
 				else
 				{
@@ -195,19 +193,17 @@ void socketTCPServer::saveMutableStruct(const I1 *data,const U4 &u4_dataSize)
 		memcpy(&u2_strSize,data + u4_offset,sizeof(U2));
 		u4_offset += sizeof(U2);
 
-		I1 *array_str = new (std::nothrow)I1[u2_strSize];
-		if(nullptr == array_str)
+		std::unique_ptr<I1 []> array_str(new (std::nothrow)I1[u2_strSize]);
+		if(nullptr == array_str.get())
 		{
 			std::cout << "new array_str error!\n";
 			return;
 		}
 
-		memcpy(array_str,data + u4_offset,u2_strSize);
+		memcpy(array_str.get(),data + u4_offset,u2_strSize);
 		u4_offset += u2_strSize;
 
-		structMutable.str.insert(0,array_str);
-
-		delete array_str;
+		structMutable.str.insert(0,array_str.get(),u2_strSize);
 	}
 
 	while(u4_offset < u4_dataSize)
@@ -217,20 +213,18 @@ void socketTCPServer::saveMutableStruct(const I1 *data,const U4 &u4_dataSize)
 		memcpy(&u2_strSize,data + u4_offset,sizeof(U2));
 		u4_offset += sizeof(U2);
 
-		I1 *array_str = new (std::nothrow)I1[u2_strSize];
-		if(nullptr == array_str)
+		std::unique_ptr<I1 []> array_str(new (std::nothrow)I1[u2_strSize]);
+		if(nullptr == array_str.get())
 		{
 			std::cout << "new array_str error!\n";
 			return;
 		}
 
-		memcpy(array_str,data + u4_offset,u2_strSize);
+		memcpy(array_str.get(),data + u4_offset,u2_strSize);
 		u4_offset += u2_strSize;
 
-		str_tmp.insert(0,array_str);
+		str_tmp.insert(0,array_str.get(),u2_strSize);
 		structMutable.vector_strList.push_back(str_tmp);
-
-		delete array_str;
 	}
 
 	{

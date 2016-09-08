@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 #include "types.h"
 
 #define SOCKET_TCP_PORT 1205		 		// TCPServer Port
