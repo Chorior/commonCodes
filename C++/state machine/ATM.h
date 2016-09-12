@@ -8,14 +8,14 @@
 
 namespace messaging
 {
-  // Base class of our queue entries
+	// Base class of our queue entries
 	struct message_base
 	{
 		virtual ~message_base()
 		{}
 	};
 
-  // Each message type has a specialization
+	// Each message type has a specialization
 	template<typename Msg>
 	struct wrapped_message:
 		message_base
@@ -26,12 +26,12 @@ namespace messaging
 		{}
 	};
 
-  // Our message queue
+	// Our message queue
 	class queue
 	{
 		std::mutex m;
 		std::condition_variable c;
-    // Actual queue stores pointers to message_base
+		// Actual queue stores pointers to message_base
 		std::queue<std::shared_ptr<message_base> > q;
 
 	public:
@@ -40,7 +40,7 @@ namespace messaging
 		void push(T const& msg)
 		{
 			std::lock_guard<std::mutex> lk(m);
-      // Wrap posted message and store pointer
+			// Wrap posted message and store pointer
 			q.push(std::make_shared<wrapped_message<T> >(msg));
 			c.notify_all();
 		}
@@ -48,7 +48,7 @@ namespace messaging
 		std::shared_ptr<message_base> wait_and_pop()
 		{
 			std::unique_lock<std::mutex> lk(m);
-      // Block until queue isn’t empty
+			// Block until queue isn’t empty
 			c.wait(lk,[&]{return !q.empty();});
 			auto res=q.front();
 			q.pop();
@@ -56,7 +56,7 @@ namespace messaging
 		}
 	};
 
-  // The message for closing the queue
+	// The message for closing the queue
 	class close_queue
 	{};
 
@@ -71,7 +71,7 @@ namespace messaging
 		TemplateDispatcher(TemplateDispatcher const&)=delete;
 		TemplateDispatcher& operator=(TemplateDispatcher const&)=delete;
 
-    // TemplateDispatcher instantiations are friends of each other
+		// TemplateDispatcher instantiations are friends of each other
 		template<typename Dispatcher,typename OtherMsg,typename OtherFunc>
 		friend class TemplateDispatcher;
 
@@ -80,7 +80,7 @@ namespace messaging
 			for(;;)
 			{
 				auto msg=q->wait_and_pop();
-        // If we handle the message, break out of the loop
+				// If we handle the message, break out of the loop
 				if(dispatch(msg))
 					break;
 			}
@@ -88,7 +88,7 @@ namespace messaging
 
 		bool dispatch(std::shared_ptr<message_base> const& msg)
 		{
-      // Check the message type, and call the function
+			// Check the message type, and call the function
 			if(wrapped_message<Msg>* wrapper=
 				dynamic_cast<wrapped_message<Msg>*>(msg.get()))
 			{
@@ -97,7 +97,7 @@ namespace messaging
 			}
 			else
 			{
-        // Chain to the previous dispatcher
+				// Chain to the previous dispatcher
 				return prev->dispatch(msg);
 			}
 		}
@@ -122,7 +122,7 @@ namespace messaging
 			prev_->chained=true;
 		}
 
-    // Additional handlers can be chained
+		// Additional handlers can be chained
 		template<typename OtherMsg,typename OtherFunc>
 		TemplateDispatcher<TemplateDispatcher,OtherMsg,OtherFunc>
 			handle(OtherFunc&& of)
@@ -132,7 +132,7 @@ namespace messaging
 					q,this,std::forward<OtherFunc>(of));
 		}
 
-    // The destructor is noexcept(false) again
+		// The destructor is noexcept(false) again
 		~TemplateDispatcher() noexcept(false)
 		{
 			if(!chained)
@@ -147,11 +147,11 @@ namespace messaging
 		queue* q;
 		bool chained;
 
-    // dispatcher instances cannot be copied
+		// dispatcher instances cannot be copied
 		dispatcher(dispatcher const&)=delete;
 		dispatcher& operator=(dispatcher const&)=delete;
 
-    // Allow TemplateDispatcher instances to access the internals
+		// Allow TemplateDispatcher instances to access the internals
 		template<
 			typename Dispatcher,
 			typename Msg,
@@ -160,7 +160,7 @@ namespace messaging
 
 		void wait_and_dispatch()
 		{
-      // Loop, waiting for and dispatching messages
+			// Loop, waiting for and dispatching messages
 			for(;;)
 			{
 				auto msg=q->wait_and_pop();
@@ -168,7 +168,7 @@ namespace messaging
 			}
 		}
 
-    // dispatch() checks for a close_queue message, and throws
+		// dispatch() checks for a close_queue message, and throws
 		bool dispatch(
 			std::shared_ptr<message_base> const& msg)
 		{
@@ -182,12 +182,12 @@ namespace messaging
 
 	public:
 
-    // dispatcher instances can be moved
+		// dispatcher instances can be moved
 		dispatcher(dispatcher&& other):
 			q(other.q),
 			chained(other.chained)
 		{
-      // The source mustn’t wait for messages
+			// The source mustn’t wait for messages
 			other.chained=true;
 		}
 
@@ -196,7 +196,7 @@ namespace messaging
 			chained(false)
 		{}
 
-    // Handle a specific type of message with a TemplateDispatcher
+		// Handle a specific type of message with a TemplateDispatcher
 		template<typename Message,typename Func>
 		TemplateDispatcher<dispatcher,Message,Func>
 			handle(Func&& f)
@@ -205,7 +205,7 @@ namespace messaging
 				q,this,std::forward<Func>(f));
 		}
 
-    // The destructor might throw exceptions
+		// The destructor might throw exceptions
 		~dispatcher() noexcept(false)
 		{
 			if(!chained)
@@ -217,17 +217,17 @@ namespace messaging
 
 	class sender
 	{
-    // sender is wrapper around queue pointer
+		// sender is wrapper around queue pointer
 		queue*q;
 
 	public:
 
-    // Default-constructed sender has no queue
+		// Default-constructed sender has no queue
 		sender():
 			q(nullptr)
 		{}
 
-    // Allow construction from pointer to queue
+		// Allow construction from pointer to queue
 		explicit sender(queue*q_):
 			q(q_)
 		{}
@@ -237,7 +237,7 @@ namespace messaging
 		{
 			if(q)
 			{
-        // Sending pushes message on the queue
+				// Sending pushes message on the queue
 				q->push(msg);
 			}
 		}
@@ -245,24 +245,25 @@ namespace messaging
 
 	class receiver
 	{
-    // A receiver owns the queue
+		// A receiver owns the queue
 		queue q;
 
 	public:
 
-    // Allow implicit conversion to a sender that references the queue
+		// Allow implicit conversion to a sender that references the queue
 		operator sender()
 		{
 			return sender(&q);
 		}
 
-    // Waiting for a queue creates a dispatcher
+		// Waiting for a queue creates a dispatcher
 		dispatcher wait()
 		{
 			return dispatcher(&q);
 		}
 	};
 }
+
 struct withdraw
 {
 	std::string account;
