@@ -267,44 +267,44 @@ namespace messaging
 
 struct file_received
 {
-  std::string str_file;
+	std::string str_file;
 
-  explicit file_received(std::string const &str_file_):
-    str_file(str_file_)
-  {}
+	explicit file_received(std::string const &str_file_):
+		str_file(str_file_)
+	{}
 
-  explicit file_received( const I1 *array, const U4 u4_dataSize)
-  {
-    str_file = std::string(array,u4_dataSize);
-  }
+	explicit file_received( const I1 *array, const U4 u4_dataSize)
+	{
+		str_file = std::string(array,u4_dataSize);
+	}
 };
 
 struct fixed_struct_received
 {
-  std::string str_fixed_struct;
+	std::string str_fixed_struct;
 
-  explicit fixed_struct_received(std::string const &str_fixed_struct_):
-    str_fixed_struct(str_fixed_struct_)
-  {}
+	explicit fixed_struct_received(std::string const &str_fixed_struct_):
+		str_fixed_struct(str_fixed_struct_)
+	{}
 
-  explicit fixed_struct_received( const I1 *array, const U4 u4_dataSize)
-  {
-    str_fixed_struct = std::string(array,u4_dataSize);
-  }
+	explicit fixed_struct_received( const I1 *array, const U4 u4_dataSize)
+	{
+		str_fixed_struct = std::string(array,u4_dataSize);
+	}
 };
 
 struct mutable_struct_received
 {
-  std::string str_mutable_struct;
+	std::string str_mutable_struct;
 
-  explicit mutable_struct_received(std::string const &str_mutable_struct_):
-    str_mutable_struct(str_mutable_struct_)
-  {}
+	explicit mutable_struct_received(std::string const &str_mutable_struct_):
+		str_mutable_struct(str_mutable_struct_)
+	{}
 
-  explicit mutable_struct_received( const I1 *array, const U4 u4_dataSize)
-  {
-    str_mutable_struct = std::string(array,u4_dataSize);
-  }
+	explicit mutable_struct_received( const I1 *array, const U4 u4_dataSize)
+	{
+		str_mutable_struct = std::string(array,u4_dataSize);
+	}
 };
 
 #endif // _STATE_MACHINE_H_

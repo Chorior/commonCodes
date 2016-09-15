@@ -12,22 +12,22 @@ class save_pocket
 {
 	messaging::receiver incoming;
 	std::mutex iom;
-  const std::string FILE_PATH = "receive_file";
+	const std::string FILE_PATH = "receive_file";
 
-  save_pocket(save_pocket const&)=delete;
+	save_pocket(save_pocket const&)=delete;
 	save_pocket& operator=(save_pocket const&)=delete;
 
 public:
 
-  save_pocket() = default;
-  ~save_pocket() = default;
+	save_pocket() = default;
+	~save_pocket() = default;
 
 	void run();
 	void saveFile(const I1 *data, const U4 &u4_dataSize);
 	void saveFixedStruct(const I1 *data,const U4 &u4_dataSize);
 	void saveMutableStruct(const I1 *data,const U4 &u4_dataSize);
 
-  void done()
+	void done()
 	{
 		get_sender().send(messaging::close_queue());
 	}

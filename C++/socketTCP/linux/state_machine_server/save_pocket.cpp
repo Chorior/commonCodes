@@ -2,40 +2,40 @@
 
 void save_pocket::run()
 {
-  try
-  {
-    for(;;)
-    {
-      incoming.wait()
-        .handle<file_received>(
-          [&](file_received const& msg)
-          {
-            std::lock_guard<std::mutex> lk(iom);
-            std::cout << "received a file\n";
-            saveFile(msg.str_file.c_str(),msg.str_file.size());
-          }
-          )
-        .handle<fixed_struct_received>(
-          [&](fixed_struct_received const& msg)
-          {
-            std::lock_guard<std::mutex> lk(iom);
-            std::cout << "received a fixed_struct\n";
-            saveFixedStruct(msg.str_fixed_struct.c_str(),msg.str_fixed_struct.size());
-          }
-          )
-        .handle<mutable_struct_received>(
-          [&](mutable_struct_received const& msg)
-          {
-            std::lock_guard<std::mutex> lk(iom);
-            std::cout << "received a mutable_struct\n";
-            saveMutableStruct(msg.str_mutable_struct.c_str(),msg.str_mutable_struct.size());
-          }
-        );
-    }
-  }
-  catch(messaging::close_queue const&)
-  {
-  }
+	try
+	{
+		for(;;)
+		{
+			incoming.wait()
+				.handle<file_received>(
+					[&](file_received const& msg)
+					{
+						std::lock_guard<std::mutex> lk(iom);
+						std::cout << "received a file\n";
+						saveFile(msg.str_file.c_str(),msg.str_file.size());
+					}
+					)
+				.handle<fixed_struct_received>(
+					[&](fixed_struct_received const& msg)
+					{
+						std::lock_guard<std::mutex> lk(iom);
+						std::cout << "received a fixed_struct\n";
+						saveFixedStruct(msg.str_fixed_struct.c_str(),msg.str_fixed_struct.size());
+					}
+					)
+				.handle<mutable_struct_received>(
+					[&](mutable_struct_received const& msg)
+					{
+						std::lock_guard<std::mutex> lk(iom);
+						std::cout << "received a mutable_struct\n";
+						saveMutableStruct(msg.str_mutable_struct.c_str(),msg.str_mutable_struct.size());
+					}
+					);
+		}
+	}
+	catch(messaging::close_queue const&)
+	{
+	}
 }
 
 void save_pocket::saveFile(const I1 *data, const U4 &u4_dataSize)
