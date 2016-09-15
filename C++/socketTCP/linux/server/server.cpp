@@ -163,8 +163,6 @@ void socketTCPServer::run()
 
 void socketTCPServer::saveFile(const I1 *data, const U4 &u4_dataSize)
 {
-	std::cout << "saveData() called!\n";
-
 	using namespace std;
 	ofstream fout(FILE_PATH,ios_base::out | ios_base::binary);
 	if(!fout.is_open())
