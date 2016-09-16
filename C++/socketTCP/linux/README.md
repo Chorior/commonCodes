@@ -49,3 +49,128 @@
       * 长度不变结构体;
       * 长度可变结构体;
     * 为什么感觉这么low呢！
+  * 状态机TCP/IP实现说明
+    * 首先说一下状态机的实现
+      * 每个状态机都可以有自己的邮箱,所有的信息都从邮箱中读取,当然你也可以没有邮箱,这样就接收不到消息;
+      * 如果邮箱中有邮件(信息)的话,对邮件中信息的不同会有相应的处理,这个处理由程序员自己实现;
+      * 如果你想发送邮件,那么需要什么东西呢?没错,就是对方邮箱的地址
+        * 你可以在初始化自己的时候就获取你想寄邮件的邮箱地址;
+        * 你也可以从收到的邮件中获取你想回复的邮箱的地址;
+      * 如果你想接收邮件,就把自己的邮箱地址暴露出去;
+      * 记得死的时候要关闭自己的邮箱;
+    * 然后,确定自己要开几个线程,示例强行开了两个
+      * 主线程循环接收client发来的消息;
+      * 信息处理线程处理接收到的消息;
+    * 为每个线程定做一个类
+      * 如果这个类要接收信息,定义一个私有成员receiver,将其地址暴露出去;
+      * 如果这个类要主动发送信息,定义相应个数个私有成员sender,在构造的时候为其赋值;
+      * 如果这个类要回复信息,可以将邮箱地址写在信息里;
+      * 定义一个销毁邮箱的函数,你也可以在析构函数里销毁邮箱;
+      * 定义一个主函数,用于处理邮箱信息;
+    * 为每种信息定义一个结构体,包含需要的信息,如
+
+      ```C++
+      struct file_received
+      {
+      	std::string str_file;
+
+      	explicit file_received(std::string const &str_file_):
+      		str_file(str_file_)
+      	{}
+
+      	explicit file_received( const I1 *array, const U4 u4_dataSize)
+      	{
+      		str_file = std::string(array,u4_dataSize);
+      	}
+      };
+      ```
+
+    * 示例
+      * 信息处理邮箱一共处理三类信息
+        * 文件;
+        * 定长结构体;
+        * 变长结构体;
+      * 该类的定义如下
+        * receiver用于接收邮件;
+        * 不需要发送信息,故而没有sender;
+        * `run()`函数为主函数,用于处理相应信息
+          * saveFile;
+          * saveFixedStruct;
+          * saveMutableStruct;
+        * `get_sender()`函数暴露自己的邮箱地址;
+        * `done()`函数销毁自己的邮箱;
+
+        ```C++
+        class save_pocket
+        {
+        	messaging::receiver incoming;
+        	std::mutex iom;
+        	const std::string FILE_PATH = "receive_file";
+
+        	save_pocket(save_pocket const&)=delete;
+        	save_pocket& operator=(save_pocket const&)=delete;
+
+        public:
+
+        	save_pocket() = default;
+        	~save_pocket() = default;
+
+        	void run();
+        	void saveFile(const I1 *data, const U4 &u4_dataSize);
+        	void saveFixedStruct(const I1 *data,const U4 &u4_dataSize);
+        	void saveMutableStruct(const I1 *data,const U4 &u4_dataSize);
+
+        	void done()
+        	{
+        		get_sender().send(messaging::close_queue());
+        	}
+
+        	messaging::sender get_sender()
+        	{
+        		return incoming;
+        	}
+        };
+        ```
+
+      * `run()`函数
+        * 在打印消息的时候由于使用了公有资源`std::cout`,所以使用`lock_guard`锁定;
+
+        ```C++
+        void save_pocket::run()
+        {
+        	try
+        	{
+        		for(;;)
+        		{
+        			incoming.wait()
+        				.handle<file_received>(
+        					[&](file_received const& msg)
+        					{
+        						std::lock_guard<std::mutex> lk(iom);
+        						std::cout << "received a file\n";
+        						saveFile(msg.str_file.c_str(),msg.str_file.size());
+        					}
+        					)
+        				.handle<fixed_struct_received>(
+        					[&](fixed_struct_received const& msg)
+        					{
+        						std::lock_guard<std::mutex> lk(iom);
+        						std::cout << "received a fixed_struct\n";
+        						saveFixedStruct(msg.str_fixed_struct.c_str(),msg.str_fixed_struct.size());
+        					}
+        					)
+        				.handle<mutable_struct_received>(
+        					[&](mutable_struct_received const& msg)
+        					{
+        						std::lock_guard<std::mutex> lk(iom);
+        						std::cout << "received a mutable_struct\n";
+        						saveMutableStruct(msg.str_mutable_struct.c_str(),msg.str_mutable_struct.size());
+        					}
+        					);
+        		}
+        	}
+        	catch(messaging::close_queue const&)
+        	{
+        	}
+        }
+        ```
