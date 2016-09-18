@@ -42,38 +42,38 @@
       * 定义了一个基类结构体指针的`std::queue`成员;
       * `push()`模板函数为模板参数类型的数据创建一个`std::shared_ptr<wrapped_message<T> >`的临时指针,并将其压入`std::queue`;
       * `wait_and_pop()`函数等待`std::queue`不为空的时候,取走其第一个成员,并将其抹杀;
-      * 还是挺简单的,比较难的是信息收发dispatcher的实现;
+      * 还是挺简单的,比较难的是信息处理机制dispatcher的实现;
 
-      ```C++
-      class queue
-    	{
-    		std::mutex m;
-    		std::condition_variable c;
-    		// Actual queue stores pointers to message_base
-    		std::queue<std::shared_ptr<message_base> > q;
+        ```C++
+        class queue
+      	{
+      		std::mutex m;
+      		std::condition_variable c;
+      		// Actual queue stores pointers to message_base
+      		std::queue<std::shared_ptr<message_base> > q;
 
-    	public:
+      	public:
 
-    		template<typename T>
-    		void push(T const& msg)
-    		{
-    			std::lock_guard<std::mutex> lk(m);
-    			// Wrap posted message and store pointer
-    			q.push(std::make_shared<wrapped_message<T> >(msg));
-    			c.notify_all();
-    		}
+      		template<typename T>
+      		void push(T const& msg)
+      		{
+      			std::lock_guard<std::mutex> lk(m);
+      			// Wrap posted message and store pointer
+      			q.push(std::make_shared<wrapped_message<T> >(msg));
+      			c.notify_all();
+      		}
 
-    		std::shared_ptr<message_base> wait_and_pop()
-    		{
-    			std::unique_lock<std::mutex> lk(m);
-    			// Block until queue isn’t empty
-    			c.wait(lk,[&]{return !q.empty();});
-    			auto res=q.front();
-    			q.pop();
-    			return res;
-    		}
-    	};
-      ```
+      		std::shared_ptr<message_base> wait_and_pop()
+      		{
+      			std::unique_lock<std::mutex> lk(m);
+      			// Block until queue isn’t empty
+      			c.wait(lk,[&]{return !q.empty();});
+      			auto res=q.front();
+      			q.pop();
+      			return res;
+      		}
+      	};
+        ```
 
   * 然后是sender和receiver的实现
     * sender
@@ -136,4 +136,145 @@
     	};
       ```
 
-  * 最难的是dispatcher,邮件的收发,我可能要理解一下
+  * 最难的是dispatcher,邮件的处理,我可能要理解一下
+    * receiver返回的是一个临时dispatcher实例,它会调用析构函数进行销毁
+    * 析构函数在实例可用的情况下调用`wait_and_dispatch()`函数
+
+      ```C++
+      ~dispatcher() noexcept(false)
+  		{
+  			if(!chained)
+  			{
+  				wait_and_dispatch();
+  			}
+  		}
+      ```
+
+    * `wait_and_dispatch()`函数等待邮箱信息,并将其传送给`dispatch()`函数
+
+      ```C++
+      void wait_and_dispatch()
+  		{
+  			// Loop, waiting for and dispatching messages
+  			for(;;)
+  			{
+  				auto msg=q->wait_and_pop();
+  				dispatch(msg);
+  			}
+  		}
+      ```
+
+    * `dispatch()`函数检查信息是否是销毁邮箱信息
+      * 如果是,那么抛出一个异常;
+        * 这是析构函数以`noexcept(false)`标识的原因;
+        * 因为默认是`noexcept(true)`,抛出异常会使程序终止;
+      * 若不是,那么返回一个false,表明该信息没有被处理;
+
+        ```C++
+        // dispatch() checks for a close_queue message, and throws
+    		bool dispatch(
+    			std::shared_ptr<message_base> const& msg)
+    		{
+    			if(dynamic_cast<wrapped_message<close_queue>*>(msg.get()))
+    			{
+    				throw close_queue();
+    			}
+
+    			return false;
+    		}
+        ```
+
+    * `handle()`函数是一个用来处理邮件信息的函数
+      * 由于信息类型不是可推论的,所以使用了模板参数指明类型,并传递一个函数或可调用对象处理这个信息;
+      * 这个函数传递了`std::queue`指针、当前邮件处理者和一个处理函数给一个模板类TemplateDispatcher实例用于处理指定类型的邮件信息;
+
+        ```C++
+        // Handle a specific type of message with a TemplateDispatcher
+    		template<typename Message,typename Func>
+    		TemplateDispatcher<dispatcher,Message,Func>
+    			handle(Func&& f)
+    		{
+    			return TemplateDispatcher<dispatcher,Message,Func>(
+    				q,this,std::forward<Func>(f));
+    		}
+        ```
+
+    * 和dispatcher类差不多,模板类TemplateDispatcher的析构函数也调用`wait_and_dispatch()`函数
+      * 其等待邮箱信息,并调用`dispatch()`函数进行处理;
+
+        ```C++
+        void wait_and_dispatch()
+    		{
+    			for(;;)
+    			{
+    				auto msg=q->wait_and_pop();
+    				// If we handle the message, break out of the loop
+    				if(dispatch(msg))
+    					break;
+    			}
+    		}
+        ```
+
+    * `dispatch()`函数处理得到的消息,
+      * 若当前处理者能够处理这个信息,那么处理完毕之后返回true结束当前处理任务;
+      * 若不是当前处理者能够处理的信息,那么交还给前一个处理者处理
+        * 若前一个处理者也不能处理这个信息,那么返回false表示信息未处理但是已经丢弃了,继续等待下一个邮件信息;
+        * 若是销毁邮箱信息,那么抛出异常;
+
+          ```C++
+          bool dispatch(std::shared_ptr<message_base> const& msg)
+      		{
+      			// Check the message type, and call the function
+      			if(wrapped_message<Msg>* wrapper=
+      				dynamic_cast<wrapped_message<Msg>*>(msg.get()))
+      			{
+      				f(wrapper->contents);
+      				return true;
+      			}
+      			else
+      			{
+      				// Chain to the previous dispatcher
+      				return prev->dispatch(msg);
+      			}
+      		}
+          ```
+
+    * 使用者只要让自己的邮箱不停的等待邮箱信息,自动处理直到捕获到`close_queue`异常即可
+      * 就像示例处理的一样,还是挺简单的(妈的真会玩,我以前的类都是结束调用析构,特么直接从析构开始,666)
+
+        ```C++
+        try
+      	{
+      		for(;;)
+      		{
+      			incoming.wait()
+      				.handle<file_received>(
+      					[&](file_received const& msg)
+      					{
+      						std::lock_guard<std::mutex> lk(iom);
+      						std::cout << "received a file\n";
+      						saveFile(msg.str_file.c_str(),msg.str_file.size());
+      					}
+      					)
+      				.handle<fixed_struct_received>(
+      					[&](fixed_struct_received const& msg)
+      					{
+      						std::lock_guard<std::mutex> lk(iom);
+      						std::cout << "received a fixed_struct\n";
+      						saveFixedStruct(msg.str_fixed_struct.c_str(),msg.str_fixed_struct.size());
+      					}
+      					)
+      				.handle<mutable_struct_received>(
+      					[&](mutable_struct_received const& msg)
+      					{
+      						std::lock_guard<std::mutex> lk(iom);
+      						std::cout << "received a mutable_struct\n";
+      						saveMutableStruct(msg.str_mutable_struct.c_str(),msg.str_mutable_struct.size());
+      					}
+      					);
+      		}
+      	}
+      	catch(messaging::close_queue const&)
+      	{
+      	}
+        ```
