@@ -55,6 +55,7 @@
   * 除了创建消息队列,msgflg剩下的位被用来定义消息队列的权限;
   * 消息队列的权限与文件权限相同,如600代表只有当前用户可读可写;
   * 错误返回-1;
+  * 系统可以创建的队列的数量限制可以从`/proc/sys/kernel/msgmni`查看;
 
     ```
     On failure, errno is set to one of the following values:
@@ -101,7 +102,7 @@
         double f8;    
         int i4;
         float f4;
-      }
+      };
 
       struct msgbuf {
           long mtype;         /* message type */
@@ -111,19 +112,21 @@
 
     * msgsz参数用于指定发送和接收的消息长度(字节);
     * `msgsnd()`
+      * `int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);`
       * 发送一个msgp参数指针指向的消息的复制到与msqid参数标识的消息队列;
       * 成功返回0；
-      * 失败返回-1并用errorno指明错误类型;
+      * 失败返回-1并用errno指明错误类型;
       * 如果消息队列空间足够,那么`msgsnd()`立即成功;
       * 如果消息队列已满
         * `msgsnd()`默认会发生阻塞直到消息队列可以容纳新的消息;
           * 在阻塞期间,如果发生以下两种情况,函数会失败
-            * 队列被移除了,失败并置errorno为`EIDRM`;
+            * 队列被移除了,失败并置errno为`EIDRM`;
             * a signal is caught,in which case the system call fails with errno set to `EINTR`;
               * see  signal(7);
               * `msgsnd()` is never automatically restarted after being interrupted by a signal handler, regardless of the setting of the `SA_RESTART` flag when establishing a signal handler;
-        * 如果`IPC_NOWAIT`被msgflg参数指定,那么函数失败,并置errorno为`EAGAIN`;              
-      * 消息队列容量限制可以从`/proc/sys/kernel/msgmnb`查看,这个限制可以用`msgctl()`函数修改;
+        * 如果`IPC_NOWAIT`被msgflg参数指定,那么函数失败,并置errno为`EAGAIN`;              
+      * 消息队列容量字节限制可以从`/proc/sys/kernel/msgmnb`查看,这个限制可以用`msgctl()`函数修改;
+      * 单个消息最大字节数可以从`/proc/sys/kernel/msgmax`查看;
       * 消息队列在下面两种情况下被认为是满的
         * 添加一个新的消息到消息队列中会使队列总字节数超过队列的容量限制;
         * 添加一个新的消息队列到消息队列中会使队列消息总数超过队列的承受限制;
@@ -135,6 +138,203 @@
         * `msg_stime`被设为当前时间;
 
     * `msgrcv()`
+      * `ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg);`
       * 从一个消息队列中移除一个消息,并将其放置在msgp参数指向的缓冲区里;
       * 成功返回实际复制到mtext数组的字节数;
-      * 失败返回-1并用errorno指明错误类型;
+      * 失败返回-1并用errno指明错误类型;
+      * msgsz参数指定了msgp参数指针指向的结构体的mtext成员的最大字节数;
+        * 如果消息长度大于msgsz,那么结果依赖于msgflg参数是否指定了`MSG_NOERROR`;
+          * 如果指定,那么消息会被截断,并且截断的部分会被丢弃;
+          * 如果未指定,那么消息不会从队列中移除,`msgrcv()`函数会失败返回-1并置errno为`E2BIG`;
+      * msgtyp参数指定了请求消息的类型
+        * 如果msgtyp为0,那么队列的第一个消息被读取;
+        * 如果msgtyp大于0
+          * 默认情况下,队列中第一个mtype等于msgtyp的消息被读取;
+          * 如果msgtyp指定了`MSG_EXCEPT`,那么队列中第一个mtype不等于msgtyp的消息被读取;
+        * 如果msgtyp小于0,那么队列中mtype小于等于msgtyp绝对值中最小的那个消息被读取;
+        * If msgtyp is less than 0, then the first message in the queue with the lowest type less than or equal to the  absolute value  of  msgtyp will be read;
+      * msgflg是一个用0和以下标志以或逻辑构建而成的标志位
+        * `IPC_NOWAIT`: 如果没有需求类型的消息,那么失败立即返回-1并置errno为`ENOMSG`;
+        * `MSG_EXCEPT`: 取第一个非msgtyp类型的消息;
+        * `MSG_NOERROR`: 如果消息长度过长,那么截断消息;
+        * `MSG_COPY` (since Linux 3.8)
+          * 以消息位置的方式获取消息;
+          * msgtyp的含义变为偏移量,第一个消息的偏移量为0;
+          * 必须与`IPC_NOWAIT`结合使用;
+          * 如果队列中没有可用的消息,那么函数失败立即返回-1并置errno为`ENOMSG`;
+          * 不能与`MSG_EXCEPT`一起使用;
+          * 需要内核配置打开`CONFIG_CHECKPOINT_RESTORE`选项,这个选项默认是不打开的;
+      * 如果没有可用的消息且msgflg也没有指定`IPC_NOWAIT`,那么调用进程会发生阻塞,直到以下条件发生
+        * 队列中出现了可用的消息;
+        * 队列被移除了,函数失败立即返回-1并置errno为`EIDRM`;
+        * The calling process catches a signal.  In this case, the system call fails with errno set to `EINTR`;
+      * 成功时,队列数据结构发生以下更新
+        * `msg_lrpid`被设为调用进程ID;
+        * `msg_qnum`递增1;
+        * `msg_rtime`被设为当前时间;
+
+        ```
+        When msgsnd() fails, errno will be set to one among the following values:
+
+        EACCES The calling process does not have write permission on the message queue, and does not have the CAP_IPC_OWNER capability.
+
+        EAGAIN The message can't be sent due to the msg_qbytes limit for the queue and IPC_NOWAIT was specified in msgflg.
+
+        EFAULT The address pointed to by msgp isn't accessible.
+
+        EIDRM  The message queue was removed.
+
+        EINTR  Sleeping on a full message queue condition, the process caught a signal.
+
+        EINVAL Invalid msqid value, or nonpositive mtype value, or invalid msgsz value (less than 0 or greater than the system value MSGMAX).
+
+        ENOMEM The system does not have enough memory to make a copy of the message pointed to by msgp.
+
+        When msgrcv() fails, errno will be set to one among the following values:
+
+        E2BIG  The message text length is greater than msgsz and MSG_NOERROR isn't specified in msgflg.
+
+        EACCES The calling process does not have read permission on the message queue, and does not have the CAP_IPC_OWNER capability.
+
+        EFAULT The address pointed to by msgp isn't accessible.
+
+        EIDRM  While the process was sleeping to receive a message, the message queue was removed.
+
+        EINTR  While the process was sleeping to receive a message, the process caught a signal; see signal(7).
+
+        EINVAL msgqid was invalid, or msgsz was less than 0.
+
+        EINVAL (since Linux 3.14)
+               msgflg specified MSG_COPY, but not IPC_NOWAIT.
+
+        EINVAL (since Linux 3.14)
+               msgflg specified both MSG_COPY and MSG_EXCEPT.
+
+        ENOMSG IPC_NOWAIT was specified in msgflg and no message of the requested type existed on the message queue.
+
+        ENOMSG IPC_NOWAIT and MSG_COPY were specified in msgflg and the queue contains less than msgtyp messages.
+
+        ENOSYS (since Linux 3.8)
+               MSG_COPY was specified in msgflg, and this kernel was configured without CONFIG_CHECKPOINT_RESTORE.
+        ```
+
+  * 示例
+
+    ```C++
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <time.h>
+    #include <unistd.h>
+    #include <errno.h>
+    #include <sys/types.h>
+    #include <sys/ipc.h>
+    #include <sys/msg.h>
+
+    struct msgbuf {
+        long mtype;
+        char mtext[80];
+    };
+
+    static void
+    usage(char *prog_name, char *msg)
+    {
+        if (msg != NULL)
+            fputs(msg, stderr);
+
+        fprintf(stderr, "Usage: %s [options]\n", prog_name);
+        fprintf(stderr, "Options are:\n");
+        fprintf(stderr, "-s        send message using msgsnd()\n");
+        fprintf(stderr, "-r        read message using msgrcv()\n");
+        fprintf(stderr, "-t        message type (default is 1)\n");
+        fprintf(stderr, "-k        message queue key (default is 1234)\n");
+        exit(EXIT_FAILURE);
+    }
+
+    static void
+    send_msg(int qid, int msgtype)
+    {
+        struct msgbuf msg;
+        time_t t;
+
+        msg.mtype = msgtype;
+
+        time(&t);
+        snprintf(msg.mtext, sizeof(msg.mtext), "a message at %s",
+                ctime(&t));
+
+        if (msgsnd(qid, (void *) &msg, sizeof(msg.mtext),
+                    IPC_NOWAIT) == -1) {
+            perror("msgsnd error");
+            exit(EXIT_FAILURE);
+        }
+        printf("sent: %s\n", msg.mtext);
+    }
+
+    static void
+    get_msg(int qid, int msgtype)
+    {
+        struct msgbuf msg;
+
+        if (msgrcv(qid, (void *) &msg, sizeof(msg.mtext), msgtype,
+                   MSG_NOERROR | IPC_NOWAIT) == -1) {
+            if (errno != ENOMSG) {
+                perror("msgrcv");
+                exit(EXIT_FAILURE);
+            }
+            printf("No message available for msgrcv()\n");
+        } else
+            printf("message received: %s\n", msg.mtext);
+    }
+
+    int
+    main(int argc, char *argv[])
+    {
+        int qid, opt;
+        int mode = 0;               /* 1 = send, 2 = receive */
+        int msgtype = 1;
+        int msgkey = 1234;
+
+        while ((opt = getopt(argc, argv, "srt:k:")) != -1) {
+            switch (opt) {
+            case 's':
+                mode = 1;
+                break;
+            case 'r':
+                mode = 2;
+                break;
+            case 't':
+                msgtype = atoi(optarg);
+                if (msgtype <= 0)
+                    usage(argv[0], "-t option must be greater than 0\n");
+                break;
+            case 'k':
+                msgkey = atoi(optarg);
+                break;
+            default:
+                usage(argv[0], "Unrecognized option\n");
+            }
+        }
+
+        if (mode == 0)
+            usage(argv[0], "must use either -s or -r option\n");
+
+        qid = msgget(msgkey, IPC_CREAT | 0666);
+
+        if (qid == -1) {
+            perror("msgget");
+            exit(EXIT_FAILURE);
+        }
+
+        if (mode == 2)
+            get_msg(qid, msgtype);
+        else
+            send_msg(qid, msgtype);
+
+        exit(EXIT_SUCCESS);
+    }
+    ```
+
+  * `msgctl()`函数
+    * `int msgctl(int msqid, int cmd, struct msqid_ds *buf);`
+    * 对msgqid关联的消息队列进行控制;
