@@ -30,7 +30,7 @@ DESCRIPTION
                pid_t           msg_lrpid;    /* PID of last msgrcv(2) */
            };
 
-       The ipc_perm structure is defined as follows  (the  highlighted  fields
+       The ipc_perm structure is defined as follows  (the  highlighted  fields(uid gid mode)
        are settable using IPC_SET):
 
            struct ipc_perm {
