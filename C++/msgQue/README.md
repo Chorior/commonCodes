@@ -473,3 +473,223 @@
                system parameter  MSGMNB,  but  the  caller  is  not  privileged
                (Linux: does not have the CAP_SYS_RESOURCE capability).
         ```
+
+`getopt()`函数
+
+    ```C++
+    #include <unistd.h>
+
+    int getopt(int argc, char * const argv[],
+              const char *optstring);
+
+    extern char *optarg;
+    extern int optind, opterr, optopt;
+
+    #include <getopt.h>
+
+    int getopt_long(int argc, char * const argv[],
+              const char *optstring,
+              const struct option *longopts, int *longindex);
+
+    int getopt_long_only(int argc, char * const argv[],
+              const char *optstring,
+              const struct option *longopts, int *longindex);
+    ```
+
+  * 分析命令行参数;
+  * 成功时返回选项字符;
+  * 如果所有命令选项都被分析了,那么返回-1;
+  * 如果函数找到一个没有在optstring包含的字符,那么返回`?`;
+  * 如果函数找到一个迷失的选项参数,返回值取决于optstring的第一个字符
+    * 如果是冒号的话,那么返回冒号;
+    * 否则返回`?`;
+  * `getopt_long()`和`getopt_long_only()`在发现模棱两可或无关的选项时返回`?`;
+  * argc和argv参数与程序调用时传递给main函数的参数一样
+    * argc表示命令行字符串个数;
+    * argv表示字符串的指针数组;
+    * `./test -ts hahah`中
+      * argc为3;
+      * `argv[0]`为`./test`;
+      * `argv[1]`为`-ts`;
+      * `argv[2]`为`hahah`;
+  * argv数组中以`-`开始的元素为选项元素(如`-ts`);这个元素的字母为选项字母(如`ts`);
+  * 如果`getopt()`重复调用,那么它成功时依次返回每个选项元素中每个选项字母;
+  * optind是argv中下一个要处理的元素的索引;
+    * 系统初始化值为1(第一个字符串不能是选项元素);
+    * 如果你要重新浏览相同的argv数组或者浏览新的参数容器,你可以将其重置为1;
+  * 如果`getopt()`在找到另一个选项字母,那么它返回这个字母,并且更新optind和一个静态变量nextchar
+    * 这样在`getopt()`下一次被调用时可以继续搜索接下来的argv选项元素和选项字母;
+  * 如果没有更多的选项字母,那么`getopt()`返回-1;
+  * optstring参数是包含合理选项字母的字符串
+    * 具有参数的选项后面跟有一个冒号,如`srt:k:`表示`-s`和`-r`没有参数,`-t`和`-k`后面跟有参数;
+    * 如果包含`w;`那么`-w foo`与`--foo`效果一样;
+    * 如果第一个字母是`+`,或者环境变量`POSIXLY_CORRECT`被设置
+      * 当`getopt()`遇到不是参数元素的元素时,函数停止;
+    * 如果第一个字母是`-`,那么每个不是参数元素的元素都会被当作字母编码1的选项参数处理;
+    * If the first character of optstring is '-', then each nonoption argv-element is handled as if it were the argument of an option with character code 1;
+    * 如果第一个字符是`:`(可能跟在'+'或`-`后面),那么`getopt()`在发现一个迷失的选项参数时返回`:`而不是`?`;
+    * __optarg指向选项元素的选项参数__;
+  * 两个引号意味着一个选项带有可选可选参数
+    * 如果当前选项元素中有选项参数,那么它被optarg返回;
+    * 否则optarg被置为0;
+  * 默认情况下,`getopt()`在浏览时会置换argv中的内容,若依最后所有不是选项元素的元素会留在最后面;
+  * 如果`getopt()`没有识别出选项字符
+    * 它会在stderr打印出错误信息;
+    * 保存字符到optopt;
+    * 返回`?`;
+  * 如果函数找到一个没有在optstring中包含的字符,或者它发现一个迷失的选项参数
+    * 返回`?`;
+    * 将optopt设为实际的选项字符;
+  * 如果发现一个错误,且optstring第一个字符不是引号,且`opterr`非零(默认),函数打印错误信息;
+  * `getopt_long()`还支持长选项,即两个短杠;
+    * 如果只需要长选项,那么将optstring设为`""`而不是NULL;
+    * 一个长选项可能需要一个参数,形式如下
+      * `--arg=param`;
+      * `--argparam`;
+    * longopts是`struct option`数组第一个元素的指针;
+      * `struct option`定义在`<getopt.h>`中
+
+        ```Ｃ++
+        struct option {
+           const char *name;
+           int         has_arg;
+           int        *flag;
+           int         val;
+        };
+        ```
+
+      * name是长选项的名字;
+      * has_arg有下列选项
+        * `no_argument`或0: 选项没有参数;
+        * `required_argument`或1: 选项需要参数;
+        * `optional_argument`或2: 选项参数可选;
+      * flag指明结果如何返回
+        * `NULL`: 返回val(调用程序可能将val设为与长选项相等的短选项);
+        * 否则返回0,且如果选项被找到,那么flag指向一个变量,这个变量会被设置到val;如果选项未被找到,那么不发生改变;
+      * val是返回的值或者加载flag指向的变量;
+    * 如果longindex不是`NULL`,那么它指向一个变量,这个变量会被设置到longopts,即长选项的索引;
+  * `getopt_long_only()`将`-`与`--`视为相同,除非以`-`开始的选项没有匹配的长选项,但是匹配一个短选项,那么函数将它视为短选项;
+
+    ```C++
+    #include <unistd.h>
+    #include <stdlib.h>
+    #include <stdio.h>
+
+    int
+    main(int argc, char *argv[])
+    {
+    	 int flags, opt;
+    	 int nsecs, tfnd;
+
+    	 nsecs = 0;
+    	 tfnd = 0;
+    	 flags = 0;
+    	 while ((opt = getopt(argc, argv, "nt:")) != -1) {
+    			 switch (opt) {
+    			 case 'n':
+    					 flags = 1;
+    					 break;
+    			 case 't':
+    					 nsecs = atoi(optarg);
+    					 tfnd = 1;
+    					 break;
+    			 default: /* '?' */
+    					 fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",
+    									 argv[0]);
+    					 exit(EXIT_FAILURE);
+    			 }
+
+    			 if (optind < argc) {
+    					 printf("name argument = %s\n", argv[optind]);
+    			 }
+    	 }
+
+    	 printf("flags=%d; tfnd=%d; nsecs=%d; optind=%d\n",
+    					 flags, tfnd, nsecs, optind);
+
+    	 /* Other code omitted */
+
+    	 exit(EXIT_SUCCESS);
+    }
+    ```
+
+    ```C++
+    #include <stdio.h>     /* for printf */
+    #include <stdlib.h>    /* for exit */
+    #include <getopt.h>
+
+    int
+    main(int argc, char **argv)
+    {
+       int c;
+       int digit_optind = 0;
+
+       while (1) {
+           int this_option_optind = optind ? optind : 1;
+           int option_index = 0;
+           static struct option long_options[] = {
+               {"add",     required_argument, 0,  0 },
+               {"append",  no_argument,       0,  0 },
+               {"delete",  required_argument, 0,  0 },
+               {"verbose", no_argument,       0,  0 },
+               {"create",  required_argument, 0, 'c'},
+               {"file",    required_argument, 0,  0 },
+               {0,         0,                 0,  0 }
+          };
+
+         c = getopt_long(argc, argv, "abc:d:012",
+                  long_options, &option_index);
+         if (c == -1)
+             break;
+
+         switch (c) {
+         case 0:
+             printf("option %s", long_options[option_index].name);
+             if (optarg)
+                 printf(" with arg %s", optarg);
+             printf("\n");
+             break;
+
+         case '0':
+         case '1':
+         case '2':
+             if (digit_optind != 0 && digit_optind != this_option_optind)
+                    printf("digits occur in two different argv-elements.\n");
+            digit_optind = this_option_optind;
+            printf("option %c\n", c);
+            break;
+
+        case 'a':
+          printf("option a\n");
+          break;
+
+        case 'b':
+          printf("option b\n");
+          break;
+
+        case 'c':
+          printf("option c with value '%s'\n", optarg);
+          break;
+
+        case 'd':
+          printf("option d with value '%s'\n", optarg);
+          break;
+
+        case '?':
+          break;
+
+        default:
+          printf("?? getopt returned character code 0%o ??\n", c);
+        }
+      }
+
+      if (optind < argc) {
+        printf("non-option ARGV-elements: ");
+        while (optind < argc)
+          printf("%s ", argv[optind++]);
+        printf("\n");
+      }
+
+      exit(EXIT_SUCCESS);
+    }
+    ```
