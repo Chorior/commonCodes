@@ -80,7 +80,8 @@ get_msg()
 	}
 }
 
-void input_msg(char *text, const int &textSize, int &msgtype)
+void
+input_msg(char *text, const int &textSize, int &msgtype)
 {
 	std::lock_guard<std::mutex> lk(mut_cout);
 	while(0 >= msgtype)
