@@ -5,29 +5,29 @@
 * Linux环境提供了XSI和POSIX两套消息队列;
 * XSI消息队列有四个方法
 
-  ```C++
-  #include <sys/types.h>
-  #include <sys/ipc.h>
-  #include <sys/msg.h>
+    ```C++
+    #include <sys/types.h>
+    #include <sys/ipc.h>
+    #include <sys/msg.h>
 
-  int msgget(key_t key, int msgflg);
+    int msgget(key_t key, int msgflg);
 
-  int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+    int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
 
-  ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
-                 int msgflg);
+    ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
+                   int msgflg);
 
-  int msgctl(int msqid, int cmd, struct msqid_ds *buf);
-  ```
+    int msgctl(int msqid, int cmd, struct msqid_ds *buf);
+    ```
 
 * 在开始讲上面四个函数前,先来讲`ftok()`函数
 
-  ```C++
-  #include <sys/types.h>
-  #include <sys/ipc.h>
+    ```C++
+    #include <sys/types.h>
+    #include <sys/ipc.h>
 
-  key_t ftok(const char *pathname, int proj_id);
-  ```
+    key_t ftok(const char *pathname, int proj_id);
+    ```
 
   * ftok - convert a pathname and a project identifier to a System V IPC key;
   * 转换一个路径名和一个工程标识到一个 System V IPC key;
@@ -59,44 +59,44 @@
   * 错误返回-1;
   * 系统可以创建的队列的数量限制可以从`/proc/sys/kernel/msgmni`查看;
 
-    ```
-    If a new message queue is created, then its associated data structure msqid_ds (see msgctl(2)) is initialized as follows:
+      ```
+      If a new message queue is created, then its associated data structure msqid_ds (see msgctl(2)) is initialized as follows:
 
-           msg_perm.cuid and msg_perm.uid are set to the effective user ID of the calling process.
+             msg_perm.cuid and msg_perm.uid are set to the effective user ID of the calling process.
 
-           msg_perm.cgid and msg_perm.gid are set to the effective group ID of the calling process.
+             msg_perm.cgid and msg_perm.gid are set to the effective group ID of the calling process.
 
-           The least significant 9 bits of msg_perm.mode are set to the least significant 9 bits of msgflg.
+             The least significant 9 bits of msg_perm.mode are set to the least significant 9 bits of msgflg.
 
-           msg_qnum, msg_lspid, msg_lrpid, msg_stime, and msg_rtime are set to 0.
+             msg_qnum, msg_lspid, msg_lrpid, msg_stime, and msg_rtime are set to 0.
 
-           msg_ctime is set to the current time.
+             msg_ctime is set to the current time.
 
-           msg_qbytes is set to the system limit MSGMNB
-    ```
+             msg_qbytes is set to the system limit MSGMNB
+      ```
 
-    ```
-    On failure, errno is set to one of the following values:
+      ```
+      On failure, errno is set to one of the following values:
 
-    EACCES A  message  queue  exists  for  key,  but  the  calling  process does not have permission to access the queue, and does not have the CAP_IPC_OWNER capability.
+      EACCES A  message  queue  exists  for  key,  but  the  calling  process does not have permission to access the queue, and does not have the CAP_IPC_OWNER capability.
 
-    EEXIST IPC_CREAT and IPC_EXCL were specified in msgflg, but a message queue already exists for key.
+      EEXIST IPC_CREAT and IPC_EXCL were specified in msgflg, but a message queue already exists for key.
 
-    ENOENT No message queue exists for key and msgflg did not specify IPC_CREAT.
+      ENOENT No message queue exists for key and msgflg did not specify IPC_CREAT.
 
-    ENOMEM A message queue has to be created but the system does not have enough memory for the new data structure.
+      ENOMEM A message queue has to be created but the system does not have enough memory for the new data structure.
 
-    ENOSPC A message queue has to be created but the system limit for the maximum number of message queues (MSGMNI) would be exceeded.
-    ```
+      ENOSPC A message queue has to be created but the system limit for the maximum number of message queues (MSGMNI) would be exceeded.
+      ```
 
 * `msgsnd()`函数和`msgrcv()`函数
 
-  ```C++
-  int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+    ```C++
+    int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
 
-  ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
-                 int msgflg);
-  ```
+    ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
+                   int msgflg);
+    ```
 
   * `msgsnd()`和`msgrcv()`分别被用来发送信息到一个消息队列中和从一个消息队列中接收消息;
     * 如果你要向一个消息队列中发送消息,那么你所拥有的进程必须要有对该消息队列写的权限;
@@ -104,29 +104,29 @@
   * msgp参数指向一个自定义结构体
     * 这个结构体的一般形式是
 
-      ```C++
-      struct msgbuf {
-          long mtype;       /* message type, must be > 0 */
-          char mtext[1];    /* message data */
-      };
-      ```
+        ```C++
+        struct msgbuf {
+            long mtype;       /* message type, must be > 0 */
+            char mtext[1];    /* message data */
+        };
+        ```
 
     * 这个结构体的第一个long成员变量为消息类型,必须大于零,后面在接收时可用于筛选信息;
     * 后面的成员为一个数组或其它结构体
 
-      ```C++
-      struct myText
-      {
-        double f8;    
-        int i4;
-        float f4;
-      };
+        ```C++
+        struct myText
+        {
+          double f8;    
+          int i4;
+          float f4;
+        };
 
-      struct msgbuf {
-          long mtype;         /* message type */
-          struct myText text; /* message data */
-      };
-      ```
+        struct msgbuf {
+            long mtype;         /* message type */
+            struct myText text; /* message data */
+        };
+        ```
 
     * msgsz参数用于指定发送和接收的消息长度(字节);
     * `msgsnd()`
@@ -192,203 +192,203 @@
         * `msg_qnum`递增1;
         * `msg_rtime`被设为当前时间;
 
-          ```
-          When msgsnd() fails, errno will be set to one among the following values:
+            ```
+            When msgsnd() fails, errno will be set to one among the following values:
 
-          EACCES The calling process does not have write permission on the message queue, and does not have the CAP_IPC_OWNER capability.
+            EACCES The calling process does not have write permission on the message queue, and does not have the CAP_IPC_OWNER capability.
 
-          EAGAIN The message can't be sent due to the msg_qbytes limit for the queue and IPC_NOWAIT was specified in msgflg.
+            EAGAIN The message can't be sent due to the msg_qbytes limit for the queue and IPC_NOWAIT was specified in msgflg.
 
-          EFAULT The address pointed to by msgp isn't accessible.
+            EFAULT The address pointed to by msgp isn't accessible.
 
-          EIDRM  The message queue was removed.
+            EIDRM  The message queue was removed.
 
-          EINTR  Sleeping on a full message queue condition, the process caught a signal.
+            EINTR  Sleeping on a full message queue condition, the process caught a signal.
 
-          EINVAL Invalid msqid value, or nonpositive mtype value, or invalid msgsz value (less than 0 or greater than the system value MSGMAX).
+            EINVAL Invalid msqid value, or nonpositive mtype value, or invalid msgsz value (less than 0 or greater than the system value MSGMAX).
 
-          ENOMEM The system does not have enough memory to make a copy of the message pointed to by msgp.
+            ENOMEM The system does not have enough memory to make a copy of the message pointed to by msgp.
 
-          When msgrcv() fails, errno will be set to one among the following values:
+            When msgrcv() fails, errno will be set to one among the following values:
 
-          E2BIG  The message text length is greater than msgsz and MSG_NOERROR isn't specified in msgflg.
+            E2BIG  The message text length is greater than msgsz and MSG_NOERROR isn't specified in msgflg.
 
-          EACCES The calling process does not have read permission on the message queue, and does not have the CAP_IPC_OWNER capability.
+            EACCES The calling process does not have read permission on the message queue, and does not have the CAP_IPC_OWNER capability.
 
-          EFAULT The address pointed to by msgp isn't accessible.
+            EFAULT The address pointed to by msgp isn't accessible.
 
-          EIDRM  While the process was sleeping to receive a message, the message queue was removed.
+            EIDRM  While the process was sleeping to receive a message, the message queue was removed.
 
-          EINTR  While the process was sleeping to receive a message, the process caught a signal; see signal(7).
+            EINTR  While the process was sleeping to receive a message, the process caught a signal; see signal(7).
 
-          EINVAL msgqid was invalid, or msgsz was less than 0.
+            EINVAL msgqid was invalid, or msgsz was less than 0.
 
-          EINVAL (since Linux 3.14)
-                 msgflg specified MSG_COPY, but not IPC_NOWAIT.
+            EINVAL (since Linux 3.14)
+                   msgflg specified MSG_COPY, but not IPC_NOWAIT.
 
-          EINVAL (since Linux 3.14)
-                 msgflg specified both MSG_COPY and MSG_EXCEPT.
+            EINVAL (since Linux 3.14)
+                   msgflg specified both MSG_COPY and MSG_EXCEPT.
 
-          ENOMSG IPC_NOWAIT was specified in msgflg and no message of the requested type existed on the message queue.
+            ENOMSG IPC_NOWAIT was specified in msgflg and no message of the requested type existed on the message queue.
 
-          ENOMSG IPC_NOWAIT and MSG_COPY were specified in msgflg and the queue contains less than msgtyp messages.
+            ENOMSG IPC_NOWAIT and MSG_COPY were specified in msgflg and the queue contains less than msgtyp messages.
 
-          ENOSYS (since Linux 3.8)
-                 MSG_COPY was specified in msgflg, and this kernel was configured without CONFIG_CHECKPOINT_RESTORE.
-          ```
+            ENOSYS (since Linux 3.8)
+                   MSG_COPY was specified in msgflg, and this kernel was configured without CONFIG_CHECKPOINT_RESTORE.
+            ```
 
   * 示例
 
-    ```C++
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #include <time.h>
-    #include <unistd.h>
-    #include <errno.h>
-    #include <sys/types.h>
-    #include <sys/ipc.h>
-    #include <sys/msg.h>
+      ```C++
+      #include <stdio.h>
+      #include <stdlib.h>
+      #include <string.h>
+      #include <time.h>
+      #include <unistd.h>
+      #include <errno.h>
+      #include <sys/types.h>
+      #include <sys/ipc.h>
+      #include <sys/msg.h>
 
-    struct mymsgbuf {
-    		long mtype;
-    		char mtext[80];
-    };
+      struct mymsgbuf {
+          long mtype;
+          char mtext[80];
+      };
 
-    static void
-    usage(char *prog_name,const char *msg)
-    {
-    		if (msg != NULL)
-    				fputs(msg, stderr);
+      static void
+      usage(char *prog_name,const char *msg)
+      {
+          if (msg != NULL)
+              fputs(msg, stderr);
 
-    		fprintf(stderr, "Usage: %s [options]\n", prog_name);
-    		fprintf(stderr, "Options are:\n");
-    		fprintf(stderr, "-s        send message using msgsnd()\n");
-    		fprintf(stderr, "-r        read message using msgrcv()\n");
-    		fprintf(stderr, "-t        message type (default is 1)\n");
-    		fprintf(stderr, "-k        message queue key (default is 1234)\n");
-    		exit(EXIT_FAILURE);
-    }
+          fprintf(stderr, "Usage: %s [options]\n", prog_name);
+          fprintf(stderr, "Options are:\n");
+          fprintf(stderr, "-s        send message using msgsnd()\n");
+          fprintf(stderr, "-r        read message using msgrcv()\n");
+          fprintf(stderr, "-t        message type (default is 1)\n");
+          fprintf(stderr, "-k        message queue key (default is 1234)\n");
+          exit(EXIT_FAILURE);
+      }
 
-    static void
-    send_msg(int qid, int msgtype)
-    {
-    		struct mymsgbuf msg;
-    		time_t t;
+      static void
+      send_msg(int qid, int msgtype)
+      {
+          struct mymsgbuf msg;
+          time_t t;
 
-    		msg.mtype = msgtype;
+          msg.mtype = msgtype;
 
-    		time(&t);
-    		snprintf(msg.mtext, sizeof(msg.mtext), "a message at %s",
-    						ctime(&t));
+          time(&t);
+          snprintf(msg.mtext, sizeof(msg.mtext), "a message at %s",
+                  ctime(&t));
 
-    		if (msgsnd(qid, (void *) &msg, sizeof(msg.mtext),
-    								IPC_NOWAIT) == -1) {
-    				perror("msgsnd error");
-    				exit(EXIT_FAILURE);
-    		}
-    		printf("sent: %s\n", msg.mtext);
-    }
+          if (msgsnd(qid, (void *) &msg, sizeof(msg.mtext),
+                      IPC_NOWAIT) == -1) {
+              perror("msgsnd error");
+              exit(EXIT_FAILURE);
+          }
+          printf("sent: %s\n", msg.mtext);
+      }
 
-    static void
-    get_msg(int qid, int msgtype)
-    {
-    		struct mymsgbuf msg;
+      static void
+      get_msg(int qid, int msgtype)
+      {
+          struct mymsgbuf msg;
 
-    		if (msgrcv(qid, (void *) &msg, sizeof(msg.mtext), msgtype,
-    							 MSG_NOERROR | IPC_NOWAIT) == -1) {
-    				if (errno != ENOMSG) {
-    						perror("msgrcv");
-    						exit(EXIT_FAILURE);
-    				}
-    				printf("No message available for msgrcv()\n");
-    		} else
-    				printf("message received: %s\n", msg.mtext);
-    }
+          if (msgrcv(qid, (void *) &msg, sizeof(msg.mtext), msgtype,
+                     MSG_NOERROR | IPC_NOWAIT) == -1) {
+              if (errno != ENOMSG) {
+                  perror("msgrcv");
+                  exit(EXIT_FAILURE);
+              }
+              printf("No message available for msgrcv()\n");
+          } else
+              printf("message received: %s\n", msg.mtext);
+      }
 
-    int
-    main(int argc, char *argv[])
-    {
-    		int qid, opt;
-    		int mode = 0;               /* 1 = send, 2 = receive */
-    		int msgtype = 1;
-    		int msgkey = 1234;
+      int
+      main(int argc, char *argv[])
+      {
+          int qid, opt;
+          int mode = 0;               /* 1 = send, 2 = receive */
+          int msgtype = 1;
+          int msgkey = 1234;
 
-    		while ((opt = getopt(argc, argv, "srt:k:")) != -1) {
-    				switch (opt) {
-    				case 's':
-    						mode = 1;
-    						break;
-    				case 'r':
-    						mode = 2;
-    						break;
-    				case 't':
-    						msgtype = atoi(optarg);
-    						if (msgtype <= 0)
-    								usage(argv[0], "-t option must be greater than 0\n");
-    						break;
-    				case 'k':
-    						msgkey = atoi(optarg);
-    						break;
-    				default:
-    						usage(argv[0], "Unrecognized option\n");
-    				}
-    		}
+          while ((opt = getopt(argc, argv, "srt:k:")) != -1) {
+              switch (opt) {
+              case 's':
+                  mode = 1;
+                  break;
+              case 'r':
+                  mode = 2;
+                  break;
+              case 't':
+                  msgtype = atoi(optarg);
+                  if (msgtype <= 0)
+                      usage(argv[0], "-t option must be greater than 0\n");
+                  break;
+              case 'k':
+                  msgkey = atoi(optarg);
+                  break;
+                default:
+                    usage(argv[0], "Unrecognized option\n");
+                }
+            }
 
-    		if (mode == 0)
-    				usage(argv[0], "must use either -s or -r option\n");
+            if (mode == 0)
+                usage(argv[0], "must use either -s or -r option\n");
 
-    		qid = msgget(msgkey, IPC_CREAT | 0666);
+            qid = msgget(msgkey, IPC_CREAT | 0666);
 
-    		if (qid == -1) {
-    				perror("msgget");
-    				exit(EXIT_FAILURE);
-    		}
+            if (qid == -1) {
+                perror("msgget");
+                exit(EXIT_FAILURE);
+            }
 
-    		if (mode == 2)
-    				get_msg(qid, msgtype);
-    		else
-    				send_msg(qid, msgtype);
+            if (mode == 2)
+                get_msg(qid, msgtype);
+            else
+                send_msg(qid, msgtype);
 
-    		exit(EXIT_SUCCESS);
-    }
-    ```
+            exit(EXIT_SUCCESS);
+        }
+        ```
 
   * `msgctl()`函数
     * `int msgctl(int msqid, int cmd, struct msqid_ds *buf);`
     * 对msqid关联的消息队列进行控制;
     * msqid_ds在`<sys/msg.h>`定义如下
 
-      ```C++
-      struct msqid_ds {
-          struct ipc_perm msg_perm;     /* Ownership and permissions */
-          time_t          msg_stime;    /* Time of last msgsnd(2) */
-          time_t          msg_rtime;    /* Time of last msgrcv(2) */
-          time_t          msg_ctime;    /* Time of last change */
-          unsigned long   __msg_cbytes; /* Current number of bytes in
-                                           queue (nonstandard) */
-          msgqnum_t       msg_qnum;     /* Current number of messages
-                                           in queue */
-          msglen_t        msg_qbytes;   /* Maximum number of bytes
-                                           allowed in queue */
-          pid_t           msg_lspid;    /* PID of last msgsnd(2) */
-          pid_t           msg_lrpid;    /* PID of last msgrcv(2) */
-      };
-      ```
+        ```C++
+        struct msqid_ds {
+            struct ipc_perm msg_perm;     /* Ownership and permissions */
+            time_t          msg_stime;    /* Time of last msgsnd(2) */
+            time_t          msg_rtime;    /* Time of last msgrcv(2) */
+            time_t          msg_ctime;    /* Time of last change */
+            unsigned long   __msg_cbytes; /* Current number of bytes in
+                                             queue (nonstandard) */
+            msgqnum_t       msg_qnum;     /* Current number of messages
+                                             in queue */
+            msglen_t        msg_qbytes;   /* Maximum number of bytes
+                                             allowed in queue */
+            pid_t           msg_lspid;    /* PID of last msgsnd(2) */
+            pid_t           msg_lrpid;    /* PID of last msgrcv(2) */
+        };
+        ```
 
     * `ipc_perm`定义如下,其中uid、gid、mode可以使用`IPC_SET`设置
 
-      ```C++
-      struct ipc_perm {
-          key_t          __key;       /* Key supplied to msgget(2) */
-          uid_t          uid;         /* Effective UID of owner */
-          gid_t          gid;         /* Effective GID of owner */
-          uid_t          cuid;        /* Effective UID of creator */
-          gid_t          cgid;        /* Effective GID of creator */
-          unsigned short mode;        /* Permissions */
-          unsigned short __seq;       /* Sequence number */
-      };
-      ```
+        ```C++
+        struct ipc_perm {
+            key_t          __key;       /* Key supplied to msgget(2) */
+            uid_t          uid;         /* Effective UID of owner */
+            gid_t          gid;         /* Effective GID of owner */
+            uid_t          cuid;        /* Effective UID of creator */
+            gid_t          cgid;        /* Effective GID of creator */
+            unsigned short mode;        /* Permissions */
+            unsigned short __seq;       /* Sequence number */
+        };
+        ```
 
     * cmd可用参数如下
       * `IPC_STAT`: 当调用者拥有对队列读的权限时,将队列数据结构信息复制到参数指针buf指向的缓冲区;
@@ -407,29 +407,29 @@
           * `/proc/sys/kernel/msgmnb`;
           * `/proc/sys/kernel/msgmni`;
 
-            ```C++
-            struct msginfo {
-                int msgpool; /* Size in kibibytes of buffer pool
-                                used to hold message data;
-                                unused within kernel */
-                int msgmap;  /* Maximum number of entries in message
-                                map; unused within kernel */
-                int msgmax;  /* Maximum number of bytes that can be
-                                written in a single message */
-                int msgmnb;  /* Maximum number of bytes that can be
-                                written to queue; used to initialize
-                                msg_qbytes during queue creation
-                                (msgget(2)) */
-                int msgmni;  /* Maximum number of message queues */
-                int msgssz;  /* Message segment size;
-                                unused within kernel */
-                int msgtql;  /* Maximum number of messages on all queues
-                                in system; unused within kernel */
-                unsigned short int msgseg;
-                             /* Maximum number of segments;
-                                unused within kernel */
-            };
-            ```
+              ```C++
+              struct msginfo {
+                  int msgpool; /* Size in kibibytes of buffer pool
+                                  used to hold message data;
+                                  unused within kernel */
+                  int msgmap;  /* Maximum number of entries in message
+                                  map; unused within kernel */
+                  int msgmax;  /* Maximum number of bytes that can be
+                                  written in a single message */
+                  int msgmnb;  /* Maximum number of bytes that can be
+                                  written to queue; used to initialize
+                                  msg_qbytes during queue creation
+                                  (msgget(2)) */
+                  int msgmni;  /* Maximum number of message queues */
+                  int msgssz;  /* Message segment size;
+                                  unused within kernel */
+                  int msgtql;  /* Maximum number of messages on all queues
+                                  in system; unused within kernel */
+                  unsigned short int msgseg;
+                               /* Maximum number of segments;
+                                  unused within kernel */
+              };
+              ```
 
       * `MSG_INFO`: 返回一个与`IPC_INFO`包含相同的信息的msginfo结构体,并用以下字段返回队列系统消耗
         * msgpool字段: 返回系统当前存在的队列总数;
@@ -447,54 +447,54 @@
           * This information can be used with repeated `MSG_STAT` operations to obtain information about all queues on the system;
       * 错误返回-1
 
-        ```
-        On failure, errno is set to one of the following:
+          ```
+          On failure, errno is set to one of the following:
 
-        EACCES The argument cmd is equal to IPC_STAT or MSG_STAT, but the call‐
-               ing  process  does not have read permission on the message queue
-               msqid, and does not have the CAP_IPC_OWNER capability.
+          EACCES The argument cmd is equal to IPC_STAT or MSG_STAT, but the call‐
+                 ing  process  does not have read permission on the message queue
+                 msqid, and does not have the CAP_IPC_OWNER capability.
 
-        EFAULT The argument cmd has the value  IPC_SET  or  IPC_STAT,  but  the
-               address pointed to by buf isn't accessible.
+          EFAULT The argument cmd has the value  IPC_SET  or  IPC_STAT,  but  the
+                 address pointed to by buf isn't accessible.
 
-        EIDRM  The message queue was removed.
+          EIDRM  The message queue was removed.
 
-        EINVAL Invalid  value  for cmd or msqid.  Or: for a MSG_STAT operation,
-               the index value specified in msqid referred  to  an  array  slot
-               that is currently unused.
+          EINVAL Invalid  value  for cmd or msqid.  Or: for a MSG_STAT operation,
+                 the index value specified in msqid referred  to  an  array  slot
+                 that is currently unused.
 
-        EPERM  The  argument  cmd  has  the  value IPC_SET or IPC_RMID, but the
-               effective user ID of the calling process is not the creator  (as
-               found  in msg_perm.cuid) or the owner (as found in msg_perm.uid)
-               of the message queue, and the caller is not  privileged  (Linux:
-               does not have the CAP_SYS_ADMIN capability).
+          EPERM  The  argument  cmd  has  the  value IPC_SET or IPC_RMID, but the
+                 effective user ID of the calling process is not the creator  (as
+                 found  in msg_perm.cuid) or the owner (as found in msg_perm.uid)
+                 of the message queue, and the caller is not  privileged  (Linux:
+                 does not have the CAP_SYS_ADMIN capability).
 
-        EPERM  An  attempt (IPC_SET) was made to increase msg_qbytes beyond the
-               system parameter  MSGMNB,  but  the  caller  is  not  privileged
-               (Linux: does not have the CAP_SYS_RESOURCE capability).
-        ```
+          EPERM  An  attempt (IPC_SET) was made to increase msg_qbytes beyond the
+                 system parameter  MSGMNB,  but  the  caller  is  not  privileged
+                 (Linux: does not have the CAP_SYS_RESOURCE capability).
+          ```
 
-`getopt()`函数
+* `getopt()`函数
 
-    ```C++
-    #include <unistd.h>
+      ```C++
+      #include <unistd.h>
 
-    int getopt(int argc, char * const argv[],
-              const char *optstring);
+      int getopt(int argc, char * const argv[],
+                const char *optstring);
 
-    extern char *optarg;
-    extern int optind, opterr, optopt;
+      extern char *optarg;
+      extern int optind, opterr, optopt;
 
-    #include <getopt.h>
+      #include <getopt.h>
 
-    int getopt_long(int argc, char * const argv[],
-              const char *optstring,
-              const struct option *longopts, int *longindex);
+      int getopt_long(int argc, char * const argv[],
+                const char *optstring,
+                const struct option *longopts, int *longindex);
 
-    int getopt_long_only(int argc, char * const argv[],
-              const char *optstring,
-              const struct option *longopts, int *longindex);
-    ```
+      int getopt_long_only(int argc, char * const argv[],
+                const char *optstring,
+                const struct option *longopts, int *longindex);
+      ```
 
   * 分析命令行参数;
   * 成功时返回选项字符;
@@ -549,14 +549,14 @@
     * longopts是`struct option`数组第一个元素的指针;
       * `struct option`定义在`<getopt.h>`中
 
-        ```Ｃ++
-        struct option {
-           const char *name;
-           int         has_arg;
-           int        *flag;
-           int         val;
-        };
-        ```
+          ```Ｃ++
+          struct option {
+             const char *name;
+             int         has_arg;
+             int        *flag;
+             int         val;
+          };
+          ```
 
       * name是长选项的名字;
       * has_arg有下列选项
@@ -570,126 +570,126 @@
     * 如果longindex不是`NULL`,那么它指向一个变量,这个变量会被设置到longopts,即长选项的索引;
   * `getopt_long_only()`将`-`与`--`视为相同,除非以`-`开始的选项没有匹配的长选项,但是匹配一个短选项,那么函数将它视为短选项;
 
-    ```C++
-    #include <unistd.h>
-    #include <stdlib.h>
-    #include <stdio.h>
+      ```C++
+      #include <unistd.h>
+      #include <stdlib.h>
+      #include <stdio.h>
 
-    int
-    main(int argc, char *argv[])
-    {
-    	 int flags, opt;
-    	 int nsecs, tfnd;
+      int
+      main(int argc, char *argv[])
+      {
+         int flags, opt;
+         int nsecs, tfnd;
 
-    	 nsecs = 0;
-    	 tfnd = 0;
-    	 flags = 0;
-    	 while ((opt = getopt(argc, argv, "nt:")) != -1) {
-    			 switch (opt) {
-    			 case 'n':
-    					 flags = 1;
-    					 break;
-    			 case 't':
-    					 nsecs = atoi(optarg);
-    					 tfnd = 1;
-    					 break;
-    			 default: /* '?' */
-    					 fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",
-    									 argv[0]);
-    					 exit(EXIT_FAILURE);
-    			 }
+         nsecs = 0;
+         tfnd = 0;
+         flags = 0;
+         while ((opt = getopt(argc, argv, "nt:")) != -1) {
+             switch (opt) {
+             case 'n':
+                 flags = 1;
+                 break;
+             case 't':
+                 nsecs = atoi(optarg);
+                 tfnd = 1;
+                 break;
+             default: /* '?' */
+                 fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",
+                         argv[0]);
+                 exit(EXIT_FAILURE);
+             }
 
-    			 if (optind < argc) {
-    					 printf("name argument = %s\n", argv[optind]);
-    			 }
-    	 }
+             if (optind < argc) {
+                 printf("name argument = %s\n", argv[optind]);
+             }
+         }
 
-    	 printf("flags=%d; tfnd=%d; nsecs=%d; optind=%d\n",
-    					 flags, tfnd, nsecs, optind);
+         printf("flags=%d; tfnd=%d; nsecs=%d; optind=%d\n",
+                 flags, tfnd, nsecs, optind);
 
-    	 /* Other code omitted */
+         /* Other code omitted */
 
-    	 exit(EXIT_SUCCESS);
-    }
-    ```
+         exit(EXIT_SUCCESS);
+      }
+      ```
 
-    ```C++
-    #include <stdio.h>     /* for printf */
-    #include <stdlib.h>    /* for exit */
-    #include <getopt.h>
+      ```C++
+      #include <stdio.h>     /* for printf */
+      #include <stdlib.h>    /* for exit */
+      #include <getopt.h>
 
-    int
-    main(int argc, char **argv)
-    {
-       int c;
-       int digit_optind = 0;
+      int
+      main(int argc, char **argv)
+      {
+         int c;
+         int digit_optind = 0;
 
-       while (1) {
-           int this_option_optind = optind ? optind : 1;
-           int option_index = 0;
-           static struct option long_options[] = {
-               {"add",     required_argument, 0,  0 },
-               {"append",  no_argument,       0,  0 },
-               {"delete",  required_argument, 0,  0 },
-               {"verbose", no_argument,       0,  0 },
-               {"create",  required_argument, 0, 'c'},
-               {"file",    required_argument, 0,  0 },
-               {0,         0,                 0,  0 }
-          };
+         while (1) {
+             int this_option_optind = optind ? optind : 1;
+             int option_index = 0;
+             static struct option long_options[] = {
+                 {"add",     required_argument, 0,  0 },
+                 {"append",  no_argument,       0,  0 },
+                 {"delete",  required_argument, 0,  0 },
+                 {"verbose", no_argument,       0,  0 },
+                 {"create",  required_argument, 0, 'c'},
+                 {"file",    required_argument, 0,  0 },
+                 {0,         0,                 0,  0 }
+            };
 
-         c = getopt_long(argc, argv, "abc:d:012",
-                  long_options, &option_index);
-         if (c == -1)
-             break;
+           c = getopt_long(argc, argv, "abc:d:012",
+                    long_options, &option_index);
+           if (c == -1)
+               break;
 
-         switch (c) {
-         case 0:
-             printf("option %s", long_options[option_index].name);
-             if (optarg)
-                 printf(" with arg %s", optarg);
-             printf("\n");
-             break;
+           switch (c) {
+           case 0:
+               printf("option %s", long_options[option_index].name);
+               if (optarg)
+                   printf(" with arg %s", optarg);
+               printf("\n");
+               break;
 
-         case '0':
-         case '1':
-         case '2':
-             if (digit_optind != 0 && digit_optind != this_option_optind)
-                    printf("digits occur in two different argv-elements.\n");
-            digit_optind = this_option_optind;
-            printf("option %c\n", c);
+           case '0':
+           case '1':
+           case '2':
+               if (digit_optind != 0 && digit_optind != this_option_optind)
+                      printf("digits occur in two different argv-elements.\n");
+              digit_optind = this_option_optind;
+              printf("option %c\n", c);
+              break;
+
+          case 'a':
+            printf("option a\n");
             break;
 
-        case 'a':
-          printf("option a\n");
-          break;
+          case 'b':
+            printf("option b\n");
+            break;
 
-        case 'b':
-          printf("option b\n");
-          break;
+          case 'c':
+            printf("option c with value '%s'\n", optarg);
+            break;
 
-        case 'c':
-          printf("option c with value '%s'\n", optarg);
-          break;
+          case 'd':
+            printf("option d with value '%s'\n", optarg);
+            break;
 
-        case 'd':
-          printf("option d with value '%s'\n", optarg);
-          break;
+          case '?':
+            break;
 
-        case '?':
-          break;
-
-        default:
-          printf("?? getopt returned character code 0%o ??\n", c);
+          default:
+            printf("?? getopt returned character code 0%o ??\n", c);
+          }
         }
-      }
 
-      if (optind < argc) {
-        printf("non-option ARGV-elements: ");
-        while (optind < argc)
-          printf("%s ", argv[optind++]);
-        printf("\n");
-      }
+        if (optind < argc) {
+          printf("non-option ARGV-elements: ");
+          while (optind < argc)
+            printf("%s ", argv[optind++]);
+          printf("\n");
+        }
 
-      exit(EXIT_SUCCESS);
-    }
-    ```
+        exit(EXIT_SUCCESS);
+      }
+      ```
