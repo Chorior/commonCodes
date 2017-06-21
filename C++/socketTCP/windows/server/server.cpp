@@ -96,7 +96,7 @@ std::unique_ptr<I1 []> socketTCPServer::saveData(U4 &u4_dataSize)
 				U4 offset = 0;
 				U4 u4_dataSizeTmp = u4_dataSize;
 
-				std::unique_ptr<I1 []> recv_buf(new (std::nothrow)I1[u4_dataSize]);
+				std::unique_ptr<I1 []> recv_buf(new (std::nothrow)I1[u4_dataSize + 1]);
 				if(nullptr == recv_buf.get())
 				{
 					std::cout << "the size of data is too large!\n";
@@ -104,6 +104,7 @@ std::unique_ptr<I1 []> socketTCPServer::saveData(U4 &u4_dataSize)
 					return nullptr;
 				}
 
+				memset(recv_buf.get(), 0, u4_dataSize + 1);
 				u4_recv = recv(sockConn,recv_buf.get(),u4_dataSizeTmp,0);
 				while(u4_dataSizeTmp > u4_recv)
 				{
